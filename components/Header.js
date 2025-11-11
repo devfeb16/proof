@@ -10,19 +10,24 @@ export default function Header({
     <header className="page-header">
       <div className="container header-grid">
         <div className="brand">
-          <div className="logo">
+          <Link href="/" className="logo-link">
             <h1 className="title">{title}</h1>
-          </div>
+          </Link>
         </div>
         <nav className="local-nav" aria-label="Primary">
           {navItems.map((item) => {
             const isDashboard = item.href === '/dashboard';
+            if (isDashboard) {
+              return (
+                <span key={item.href} className="nav-button">
+                  <Link href={item.href} className="inner-button">
+                    {item.label}
+                  </Link>
+                </span>
+              );
+            }
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={isDashboard ? 'nav-button' : 'nav-link'}
-              >
+              <Link key={item.href} href={item.href} className="nav-link">
                 {item.label}
               </Link>
             );
@@ -30,6 +35,30 @@ export default function Header({
         </nav>
       </div>
       <style jsx>{`
+        /* Ensure header links never inherit global underlines */
+        :global(.page-header a),
+        :global(.page-header a:link),
+        :global(.page-header a:visited),
+        :global(.page-header a:hover),
+        :global(.page-header a:active) {
+          text-decoration: none !important;
+        }
+        :global(.page-header .logo-link),
+        :global(.page-header .logo-link:link),
+        :global(.page-header .logo-link:visited),
+        :global(.page-header .logo-link:hover),
+        :global(.page-header .logo-link:active) {
+          color: inherit !important;
+          text-decoration: none !important;
+        }
+        :global(.page-header .nav-button a),
+        :global(.page-header .nav-button a:link),
+        :global(.page-header .nav-button a:visited),
+        :global(.page-header .nav-button a:hover),
+        :global(.page-header .nav-button a:active) {
+          color: #fff !important;
+          text-decoration: none !important;
+        }
         .page-header {
           border-bottom: 1px solid #eaeaea;
           background: #ffffff;
@@ -45,6 +74,11 @@ export default function Header({
           text-decoration: none;
           color: inherit;
         }
+        .logo-link {
+          display: inline-block;
+          text-decoration: none !important;
+          color: inherit !important;
+        }
         .title {
           font-size: 1.25rem;
           line-height: 1.2;
@@ -54,10 +88,12 @@ export default function Header({
           text-decoration: none;
           transition: text-decoration-color 120ms ease-in-out;
         }
-        .logo:hover .title {
-          text-decoration: underline;
-          text-decoration-thickness: 2px;
-          text-underline-offset: 4px;
+        .logo-link:hover,
+        .logo-link:focus,
+        .logo-link:active,
+        .logo-link:visited {
+          text-decoration: none !important;
+          color: inherit !important;
         }
         .local-nav {
           display: flex;
@@ -65,6 +101,7 @@ export default function Header({
           gap: 0.75rem;
           flex-wrap: wrap;
         }
+        .local-nav a { text-decoration: none !important; }
         .nav-link {
           color: #333;
           text-decoration: none;
@@ -79,25 +116,50 @@ export default function Header({
         /* Dashboard as button */
         .nav-button {
           color: #fff;
-          background: #111;
-          padding: 0.55rem 0.95rem;
+          background: #0070f3;
+          padding: 0.6rem 1rem;
           border-radius: 999px;
           text-decoration: none;
           font-weight: 600;
-          box-shadow: 0 6px 16px rgba(0,0,0,0.12);
-          border: 1px solid rgba(0,0,0,0.12);
+          display: inline-flex;
+          align-items: center;
+          gap: 0.4rem;
+          box-shadow: 0 8px 20px rgba(0,112,243,0.25);
+          border: 1px solid rgba(0,0,0,0.06);
           transition: transform 0.08s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+          cursor: pointer;
         }
         .nav-button:hover {
           transform: translateY(-1px);
-          box-shadow: 0 10px 24px rgba(0,0,0,0.16);
-          background: #000;
-          border-color: rgba(0,0,0,0.2);
+          box-shadow: 0 12px 26px rgba(0,112,243,0.35);
+          background: #0059c1;
+          border-color: rgba(0,0,0,0.08);
           text-decoration: none;
         }
+        .nav-button:active {
+          transform: translateY(0);
+          box-shadow: 0 6px 16px rgba(0,112,243,0.25);
+        }
         .nav-button:focus-visible {
-          outline: 2px solid #111;
+          outline: 2px solid #3b82f6;
           outline-offset: 2px;
+        }
+        .inner-button {
+          display: inline-block;
+          color: #fff !important;
+          text-decoration: none !important;
+          line-height: 1;
+        }
+        .inner-button:hover,
+        .inner-button:focus,
+        .inner-button:active,
+        .inner-button:visited {
+          color: #fff !important;
+          text-decoration: none !important;
+        }
+        .nav-button:hover .inner-button {
+          color: #fff !important;
+          text-decoration: none !important;
         }
         /* Prevent default underline in header links; rely on custom hovers above */
         .local-nav a:hover,

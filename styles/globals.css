@@ -37,3 +37,28 @@ a:hover {
   padding: 0 2rem;
 }
 
+/* Header-specific overrides to neutralize global link styles */
+.page-header a,
+.page-header a:link,
+.page-header a:visited,
+.page-header a:hover,
+.page-header a:active {
+  text-decoration: none;
+}
+.page-header .logo-link,
+.page-header .logo-link:link,
+.page-header .logo-link:visited,
+.page-header .logo-link:hover,
+.page-header .logo-link:active {
+  color: inherit;
+  text-decoration: none;
+}
+.page-header .nav-button a,
+.page-header .nav-button a:link,
+.page-header .nav-button a:visited,
+.page-header .nav-button a:hover,
+.page-header .nav-button a:active {
+  color: #fff;
+  text-decoration: none;
+}
+
