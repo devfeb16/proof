@@ -7,6 +7,12 @@
   --background-color: #fafafa;
 }
 
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
 body {
   /* Soft layered gradient background */
   background:
