@@ -231,7 +231,7 @@ export default function DashboardLayout({
           flex: 1;
           display: flex;
           flex-direction: column;
-          padding: 2.5rem 3rem;
+          padding: 0 3rem 2.5rem 3rem;
           overflow-y: auto;
           gap: 2rem;
         }

@@ -381,17 +381,23 @@ export default function Dashboard({ user }) {
           display: grid;
           gap: 2rem;
           min-height: 100%;
+          margin: 0;
+          padding: 0;
         }
 
         .section-header {
           display: grid;
           gap: 0.5rem;
+          margin: 0;
+          padding: 0;
         }
 
         .section-title {
           font-size: clamp(1.9rem, 3.5vw, 2.35rem);
           font-weight: 600;
           color: #0f172a;
+          margin: 0;
+          padding: 0;
         }
 
         .section-subtitle {
@@ -399,6 +405,8 @@ export default function Dashboard({ user }) {
           font-size: 1rem;
           line-height: 1.6;
           max-width: 60ch;
+          margin: 0;
+          padding: 0;
         }
 
         .section-body {
