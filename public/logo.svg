@@ -1,0 +1,6 @@
+<svg width="180" height="50" viewBox="0 0 180 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="180" height="50" rx="10" fill="white"/>
+  <text x="60" y="32" font-family="Poppins, sans-serif" font-size="24" font-weight="600" fill="#111827">Fund</text>
+  <text x="118" y="32" font-family="Poppins, sans-serif" font-size="24" font-weight="600" fill="#3B82F6">IQ</text>
+  <path d="M20 10 L10 28 H18 L12 42 L30 22 H22 L28 10 Z" fill="#3B82F6"/>
+</svg>

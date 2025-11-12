@@ -8,31 +8,35 @@ export default function Header({
 }) {
   return (
     <header className="page-header">
-      <div className="container header-grid">
-        <div className="brand">
-          <Link href="/" className="logo-link">
-            <h1 className="title">
-              <span className="brand-name">Proof360</span>
-            </h1>
-          </Link>
-        </div>
-        <nav className="local-nav" aria-label="Primary">
-          {navItems.map((item) => {
-            const isDashboard = item.href === '/dashboard';
-            if (isDashboard) {
+      <div className="container">
+        <div className="header-grid">
+          <div className="brand">
+            <Link href="/" className="logo-link">
+              <img 
+                src="/logo.svg" 
+                alt="Proof360 Logo" 
+                className="logo-img"
+              />
+            </Link>
+          </div>
+          <nav className="local-nav" aria-label="Primary">
+            {navItems.map((item) => {
+              const isDashboard = item.href === '/dashboard';
+              if (isDashboard) {
+                return (
+                  <Link key={item.href} href={item.href} className="nav-button">
+                    {item.label}
+                  </Link>
+                );
+              }
               return (
-                <Link key={item.href} href={item.href} className="nav-button">
+                <Link key={item.href} href={item.href} className="nav-link">
                   {item.label}
                 </Link>
               );
-            }
-            return (
-              <Link key={item.href} href={item.href} className="nav-link">
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
+            })}
+          </nav>
+        </div>
       </div>
       <style jsx>{`
         /* Ensure header links never inherit global underlines */
@@ -69,11 +73,24 @@ export default function Header({
           background: #ffffff;
         }
         .header-grid {
-          display: grid;
-          grid-template-columns: 1fr auto;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
           gap: 1rem;
           padding: 1.25rem 0;
-          align-items: center;
+          width: 100%;
+          box-sizing: border-box;
+        }
+        .logo-img {
+          height: auto;
+          width: auto;
+          max-height: 40px;
+          display: block;
+          transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+        .logo-link:hover .logo-img {
+          transform: scale(1.05);
+          opacity: 0.9;
         }
         .logo {
           text-decoration: none;
@@ -108,11 +125,15 @@ export default function Header({
           text-decoration: none !important;
           color: inherit !important;
         }
+        .brand {
+          flex-shrink: 0;
+        }
         .local-nav {
           display: flex;
           align-items: center;
           gap: 0.75rem;
-          flex-wrap: wrap;
+          flex-wrap: nowrap;
+          flex-shrink: 0;
         }
         .local-nav a { text-decoration: none !important; }
         .nav-link {
@@ -169,16 +190,14 @@ export default function Header({
         .logo:hover { text-decoration: none; }
         @media (max-width: 768px) {
           .header-grid {
-            grid-template-columns: 1fr;
-            gap: 0.75rem;
             padding: 1rem 0;
+            gap: 0.75rem;
           }
-          .title {
-            font-size: 1.15rem;
+          .logo-img {
+            max-height: 36px;
           }
           .local-nav {
-            justify-content: flex-start;
-            width: 100%;
+            gap: 0.5rem;
           }
           .nav-link {
             font-size: 0.9rem;
@@ -188,12 +207,10 @@ export default function Header({
         @media (max-width: 480px) {
           .header-grid {
             padding: 0.875rem 0;
+            gap: 0.5rem;
           }
-          .title {
-            font-size: 1.1rem;
-          }
-          .brand-name {
-            font-size: 1.1rem;
+          .logo-img {
+            max-height: 32px;
           }
         }
       `}</style>
