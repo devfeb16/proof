@@ -5,6 +5,35 @@ import CTA from '../components/CTA';
 import Footer from '../components/Footer';
 import Overview from '../components/Overview';
 
+export async function getServerSideProps(context) {
+  const { req } = context;
+  const cookie = req.headers.cookie || '';
+  const proto = req.headers['x-forwarded-proto'] || 'http';
+  const host = req.headers.host;
+  const baseUrl = `${proto}://${host}`;
+  
+  try {
+    const res = await fetch(`${baseUrl}/api/auth/me`, {
+      headers: { cookie },
+    });
+    const contentType = res.headers.get('content-type') || '';
+    if (res.ok && contentType.includes('application/json')) {
+      const data = await res.json();
+      const user = data?.user || data?.data?.user || null;
+      if (user) {
+        // User is authenticated, redirect to dashboard
+        return { redirect: { destination: '/dashboard', permanent: false } };
+      }
+    }
+  } catch (error) {
+    // If there's an error checking auth, just continue to show home page
+    console.error('Auth check error:', error);
+  }
+  
+  // No user session, show home page
+  return { props: {} };
+}
+
 export default function Home() {
   return (
     <div className="home">
