@@ -390,6 +390,10 @@ export default function DashboardLayout({
             padding: 2rem 1.5rem 3rem;
             margin-top: 0;
             padding-top: 4.5rem;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            overflow-x: hidden;
           }
 
           .sidebar-overlay {
@@ -425,6 +429,10 @@ export default function DashboardLayout({
           .content-inner {
             padding: 1.5rem 1rem 2rem;
             padding-top: 4rem;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            overflow-x: hidden;
           }
 
           .sidebar {

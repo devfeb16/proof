@@ -176,6 +176,9 @@ export default function SettingsPanel({ user, onProfileUpdated }) {
         .settings-grid {
           display: grid;
           gap: 1.75rem;
+          width: 100%;
+          max-width: 100%;
+          box-sizing: border-box;
         }
 
         .settings-card {
@@ -185,6 +188,10 @@ export default function SettingsPanel({ user, onProfileUpdated }) {
           padding: 1.9rem;
           display: grid;
           gap: 1.5rem;
+          width: 100%;
+          max-width: 100%;
+          box-sizing: border-box;
+          overflow-x: hidden;
         }
 
         .settings-card header {
@@ -206,11 +213,17 @@ export default function SettingsPanel({ user, onProfileUpdated }) {
         .form {
           display: grid;
           gap: 1.1rem;
+          width: 100%;
+          max-width: 100%;
+          box-sizing: border-box;
         }
 
         .field {
           display: grid;
           gap: 0.5rem;
+          width: 100%;
+          max-width: 100%;
+          box-sizing: border-box;
         }
 
         .label {
@@ -221,12 +234,14 @@ export default function SettingsPanel({ user, onProfileUpdated }) {
 
         input {
           width: 100%;
+          max-width: 100%;
           border-radius: 0.75rem;
           border: 1px solid rgba(148, 163, 184, 0.4);
           padding: 0.75rem 1rem;
           font-size: 0.95rem;
           background: #f8fafc;
           transition: border 0.2s ease, box-shadow 0.2s ease;
+          box-sizing: border-box;
         }
 
         input:focus {
@@ -273,14 +288,81 @@ export default function SettingsPanel({ user, onProfileUpdated }) {
           color: #dc2626;
         }
 
-        @media (max-width: 640px) {
+        @media (max-width: 960px) {
+          .settings-grid {
+            gap: 1.25rem;
+          }
           .settings-card {
             padding: 1.5rem;
+            gap: 1.25rem;
           }
+        }
 
+        @media (max-width: 640px) {
+          .settings-grid {
+            gap: 1rem;
+          }
+          .settings-card {
+            padding: 1.25rem;
+            gap: 1rem;
+            border-radius: 0.9rem;
+          }
+          .settings-card header {
+            gap: 0.35rem;
+          }
+          .settings-card h2 {
+            font-size: 1.1rem;
+          }
+          .settings-card p {
+            font-size: 0.9rem;
+          }
+          .form {
+            gap: 0.95rem;
+          }
+          .field {
+            gap: 0.45rem;
+          }
+          .label {
+            font-size: 0.875rem;
+          }
+          input {
+            padding: 0.7rem 0.875rem;
+            font-size: 0.9rem;
+            border-radius: 0.65rem;
+          }
           button {
             width: 100%;
             justify-self: stretch;
+            padding: 0.7rem 1.2rem;
+            font-size: 0.9rem;
+          }
+          .message {
+            font-size: 0.85rem;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .settings-card {
+            padding: 1rem;
+            gap: 0.875rem;
+            border-radius: 0.8rem;
+          }
+          .settings-card h2 {
+            font-size: 1rem;
+          }
+          .settings-card p {
+            font-size: 0.85rem;
+          }
+          .form {
+            gap: 0.875rem;
+          }
+          input {
+            padding: 0.65rem 0.8rem;
+            font-size: 0.875rem;
+          }
+          button {
+            padding: 0.65rem 1.1rem;
+            font-size: 0.875rem;
           }
         }
       `}</style>
