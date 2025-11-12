@@ -59,12 +59,11 @@ export default function Home() {
           display: flex;
           flex-direction: column;
           width: 100%;
-          overflow-x: hidden;
+          position: relative;
         }
         .home main {
           flex: 1;
           width: 100%;
-          overflow-x: hidden;
         }
         @media (max-width: 768px) {
           .home {

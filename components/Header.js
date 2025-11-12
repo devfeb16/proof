@@ -69,14 +69,27 @@ export default function Header({
           text-decoration: none !important;
         }
         .page-header {
+          position: -webkit-sticky;
           position: sticky;
           top: 0;
-          z-index: 100;
+          left: 0;
+          right: 0;
+          width: 100%;
+          z-index: 1000;
           border-bottom: 1px solid rgba(0, 0, 0, 0.08);
           background: rgba(255, 255, 255, 0.95);
           backdrop-filter: blur(10px);
           -webkit-backdrop-filter: blur(10px);
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+          margin: 0;
+          padding: 0;
+        }
+        .page-header :global(.container) {
+          max-width: 1200px;
+          margin: 0 auto;
+          padding: 0 2rem;
+          width: 100%;
+          box-sizing: border-box;
         }
         .header-grid {
           display: flex;
@@ -85,6 +98,7 @@ export default function Header({
           gap: 1rem;
           padding: 0.75rem 0;
           width: 100%;
+          max-width: 100%;
           box-sizing: border-box;
         }
         .logo-img {
@@ -195,6 +209,10 @@ export default function Header({
         .local-nav a:hover,
         .logo:hover { text-decoration: none; }
         @media (max-width: 768px) {
+          .page-header :global(.container) {
+            padding: 0 1rem;
+            max-width: 100%;
+          }
           .header-grid {
             padding: 0.65rem 0;
             gap: 0.75rem;
@@ -215,6 +233,10 @@ export default function Header({
           }
         }
         @media (max-width: 480px) {
+          .page-header :global(.container) {
+            padding: 0 0.75rem;
+            max-width: 100%;
+          }
           .header-grid {
             padding: 0.6rem 0;
             gap: 0.5rem;
