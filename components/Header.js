@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
 export default function Header({
-  title = 'Funding Intelligence — Proof360 Extension',
+  title = 'Proof360',
   navItems = [
     { href: '/dashboard', label: 'Dashboard' },
   ],
@@ -11,7 +11,9 @@ export default function Header({
       <div className="container header-grid">
         <div className="brand">
           <Link href="/" className="logo-link">
-            <h1 className="title">{title}</h1>
+            <h1 className="title">
+              <span className="brand-name">Proof360</span>
+            </h1>
           </Link>
         </div>
         <nav className="local-nav" aria-label="Primary">
@@ -91,6 +93,14 @@ export default function Header({
           text-decoration: none;
           transition: text-decoration-color 120ms ease-in-out;
         }
+        .brand-name {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          font-weight: 700;
+          letter-spacing: -0.02em;
+        }
         .logo-link:hover,
         .logo-link:focus,
         .logo-link:active,
@@ -160,9 +170,30 @@ export default function Header({
         @media (max-width: 768px) {
           .header-grid {
             grid-template-columns: 1fr;
+            gap: 0.75rem;
+            padding: 1rem 0;
           }
           .title {
-            font-size: 1.2rem;
+            font-size: 1.15rem;
+          }
+          .local-nav {
+            justify-content: flex-start;
+            width: 100%;
+          }
+          .nav-link {
+            font-size: 0.9rem;
+            padding: 0.4rem 0.6rem;
+          }
+        }
+        @media (max-width: 480px) {
+          .header-grid {
+            padding: 0.875rem 0;
+          }
+          .title {
+            font-size: 1.1rem;
+          }
+          .brand-name {
+            font-size: 1.1rem;
           }
         }
       `}</style>

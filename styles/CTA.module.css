@@ -1,15 +1,26 @@
  .section {
   padding: 2rem 0 3rem;
   background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0.95));
+  width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 .inner {
   display: grid;
   gap: 0.75rem;
   justify-items: center;
   text-align: center;
+  width: 100%;
+  max-width: 100%;
 }
 .heading {
   margin-bottom: 0.75rem;
+  width: 100%;
+}
+.heading h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  word-wrap: break-word;
 }
 .primaryCta {
   display: inline-block;
@@ -19,9 +30,61 @@
   border-radius: 10px;
   text-decoration: none;
   font-weight: 600;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  word-wrap: break-word;
+  max-width: 100%;
+}
+.primaryCta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 .contact {
   color: #666;
   font-size: 0.95rem;
+  word-wrap: break-word;
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .section {
+    padding: 1.5rem 0 2rem;
+  }
+  .heading h3 {
+    font-size: 1.3rem;
+  }
+  .primaryCta {
+    padding: 0.65rem 1.1rem;
+    font-size: 0.95rem;
+  }
+  .contact {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .section {
+    padding: 1.25rem 0 1.75rem;
+  }
+  .heading {
+    margin-bottom: 0.6rem;
+  }
+  .heading h3 {
+    font-size: 1.15rem;
+  }
+  .primaryCta {
+    padding: 0.6rem 1rem;
+    font-size: 0.9rem;
+    width: 100%;
+    max-width: 280px;
+  }
+  .contact {
+    font-size: 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .contact span:nth-child(2) {
+    display: none;
+  }
 } 
 

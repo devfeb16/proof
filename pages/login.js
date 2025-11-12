@@ -241,9 +241,41 @@ export default function LoginPage() {
           }
         }
         @media (max-width: 600px) {
+          .auth-shell {
+            padding: 4rem 1rem 3rem;
+          }
           .auth-card {
             padding: 2rem 1.65rem;
             border-radius: 1.25rem;
+          }
+          .card-header h1 {
+            font-size: 1.75rem;
+          }
+          .card-header p {
+            font-size: 0.9rem;
+          }
+        }
+        @media (max-width: 480px) {
+          .auth-shell {
+            padding: 3rem 1rem 2.5rem;
+          }
+          .auth-card {
+            padding: 1.75rem 1.5rem;
+            gap: 1.5rem;
+          }
+          .card-header h1 {
+            font-size: 1.6rem;
+          }
+          .form {
+            gap: 1.1rem;
+          }
+          input {
+            padding: 0.85rem 0.95rem;
+            font-size: 0.95rem;
+          }
+          button {
+            padding: 0.9rem 1.15rem;
+            font-size: 0.95rem;
           }
         }
         @media (prefers-reduced-motion: reduce) {

@@ -523,13 +523,79 @@ export default function Dashboard({ user }) {
           color: #64748b;
         }
 
+        @media (max-width: 960px) {
+          .section-title {
+            font-size: clamp(1.5rem, 4vw, 1.9rem);
+          }
+          .section-subtitle {
+            font-size: 0.95rem;
+            max-width: 100%;
+          }
+        }
+
         @media (max-width: 720px) {
-          .section-body {
+          .section {
             gap: 1.5rem;
+          }
+          .section-body {
+            gap: 1.25rem;
+            padding-bottom: 0.75rem;
           }
 
           .section-panels {
             grid-template-columns: 1fr;
+            gap: 1rem;
+          }
+
+          .section-card {
+            padding: 1.25rem;
+          }
+
+          .section-card h2 {
+            font-size: 1rem;
+          }
+
+          .section-list-wrap {
+            padding: 1.25rem;
+          }
+
+          .section-list-title {
+            font-size: 0.95rem;
+          }
+
+          .section-custom {
+            padding: 1.25rem;
+          }
+
+          .empty-state {
+            padding: 1.5rem;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .section-header {
+            gap: 0.4rem;
+          }
+          .section-title {
+            font-size: 1.5rem;
+          }
+          .section-subtitle {
+            font-size: 0.9rem;
+          }
+          .section-body {
+            gap: 1rem;
+          }
+          .section-card {
+            padding: 1rem;
+            border-radius: 0.9rem;
+          }
+          .section-list-wrap {
+            padding: 1rem;
+            border-radius: 0.9rem;
+          }
+          .section-custom {
+            padding: 1rem;
+            border-radius: 0.9rem;
           }
         }
       `}</style>

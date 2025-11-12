@@ -1,3 +1,5 @@
+import { useState, useEffect } from 'react';
+
 export default function DashboardLayout({
   user,
   navItems,
@@ -8,12 +10,56 @@ export default function DashboardLayout({
   isLoggingOut,
   children,
 }) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const roleLabel = user?.role ? user.role.replace(/_/g, ' ') : 'User';
   const items = Array.isArray(navItems) ? navItems : [];
 
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
+  // Close sidebar when clicking outside on mobile
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 960) {
+        setSidebarOpen(false);
+      }
+    };
+
+    const handleClickOutside = (e) => {
+      if (sidebarOpen && window.innerWidth <= 960) {
+        const sidebar = document.querySelector('.sidebar');
+        const toggle = document.querySelector('.sidebar-toggle');
+        if (sidebar && toggle && !sidebar.contains(e.target) && !toggle.contains(e.target)) {
+          setSidebarOpen(false);
+        }
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [sidebarOpen]);
+
   return (
     <div className="dashboard-shell">
-      <aside className="sidebar">
+      <button 
+        className="sidebar-toggle" 
+        onClick={toggleSidebar}
+        aria-label="Toggle sidebar"
+        aria-expanded={sidebarOpen}
+      >
+        <span className="hamburger-icon">
+          <span></span>
+          <span></span>
+          <span></span>
+        </span>
+      </button>
+      {sidebarOpen && <div className="sidebar-overlay" onClick={toggleSidebar}></div>}
+      <aside className={`sidebar ${sidebarOpen ? 'is-open' : ''}`}>
         <div className="sidebar-top">
           <div className="brand" aria-label="Application" style={{ padding: '0.8rem 0.85rem 0.6rem' }}>
             <div className="brand-mark">TS</div>
@@ -33,7 +79,12 @@ export default function DashboardLayout({
                       type="button"
                       className={`nav-button${isActive ? ' is-active' : ''}`}
                       aria-current={isActive ? 'page' : undefined}
-                      onClick={() => onNavSelect?.(item.key)}
+                      onClick={() => {
+                        onNavSelect?.(item.key);
+                        if (window.innerWidth <= 960) {
+                          setSidebarOpen(false);
+                        }
+                      }}
                     >
                       <span className="nav-label">{item.label}</span>
                     </button>
@@ -48,7 +99,12 @@ export default function DashboardLayout({
           <button
             type="button"
             className={`secondary-button secondary-button--settings${activeNav === 'settings' ? ' is-active' : ''}`}
-            onClick={onOpenSettings}
+            onClick={() => {
+              onOpenSettings?.();
+              if (window.innerWidth <= 960) {
+                setSidebarOpen(false);
+              }
+            }}
           >
             Settings
           </button>
@@ -74,6 +130,53 @@ export default function DashboardLayout({
           background: var(--dashboard-surface, #f8fafc);
           color: var(--dashboard-foreground, #0f172a);
           overflow: hidden;
+          position: relative;
+        }
+
+        .sidebar-toggle {
+          display: none;
+          position: fixed;
+          top: 1rem;
+          right: 1rem;
+          z-index: 1001;
+          background: var(--sidebar-surface, #0f172a);
+          color: #f8fafc;
+          border: none;
+          border-radius: 8px;
+          padding: 0.75rem;
+          cursor: pointer;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+          width: 48px;
+          height: 48px;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .sidebar-toggle:hover {
+          transform: scale(1.05);
+          box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .sidebar-toggle:active {
+          transform: scale(0.98);
+        }
+
+        .hamburger-icon {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          width: 24px;
+          height: 18px;
+        }
+
+        .hamburger-icon span {
+          display: block;
+          width: 100%;
+          height: 2px;
+          background: #f8fafc;
+          border-radius: 2px;
+          transition: transform 0.3s ease, opacity 0.3s ease;
         }
 
         .sidebar {
@@ -86,6 +189,7 @@ export default function DashboardLayout({
           height: 100%;
           padding: 0;
           border-right: 1px solid rgba(148, 163, 184, 0.12);
+          transition: transform 0.3s ease;
         }
 
         .sidebar-top {
@@ -237,16 +341,30 @@ export default function DashboardLayout({
         }
 
         @media (max-width: 960px) {
+          .sidebar-toggle {
+            display: flex;
+          }
+
           .dashboard-shell {
             flex-direction: column;
-            height: auto;
+            height: 100vh;
           }
 
           .sidebar {
-            width: 100%;
-            height: auto;
-            flex-direction: row;
-            overflow-x: auto;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: min(280px, 85vw);
+            height: 100vh;
+            z-index: 1000;
+            transform: translateX(-100%);
+            box-shadow: 2px 0 12px rgba(0, 0, 0, 0.15);
+            overflow-y: auto;
+            overflow-x: hidden;
+          }
+
+          .sidebar.is-open {
+            transform: translateX(0);
           }
 
           .sidebar-top,
@@ -255,20 +373,62 @@ export default function DashboardLayout({
           }
 
           .sidebar-top {
-            flex: 1;
+            padding-top: 1.25rem;
           }
 
           .nav-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
           }
 
           .secondary-button {
-            width: auto;
+            width: 100%;
           }
 
           .content-inner {
             padding: 2rem 1.5rem 3rem;
+            margin-top: 0;
+            padding-top: 4.5rem;
+          }
+
+          .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            animation: fadeIn 0.3s ease;
+          }
+        }
+
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .sidebar-toggle {
+            top: 0.75rem;
+            right: 0.75rem;
+            width: 44px;
+            height: 44px;
+            padding: 0.65rem;
+          }
+
+          .content-inner {
+            padding: 1.5rem 1rem 2rem;
+            padding-top: 4rem;
+          }
+
+          .sidebar {
+            width: min(260px, 90vw);
           }
         }
       `}</style>

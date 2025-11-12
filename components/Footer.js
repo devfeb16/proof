@@ -22,6 +22,28 @@ export default function Footer() {
           color: #666;
           font-size: 0.875rem;
         }
+        @media (max-width: 768px) {
+          .footer {
+            padding: 1.5rem 0;
+          }
+          .container {
+            padding: 0 1.5rem;
+          }
+          .footer p {
+            font-size: 0.8rem;
+          }
+        }
+        @media (max-width: 480px) {
+          .footer {
+            padding: 1.25rem 0;
+          }
+          .container {
+            padding: 0 1rem;
+          }
+          .footer p {
+            font-size: 0.75rem;
+          }
+        }
       `}</style>
     </footer>
   );

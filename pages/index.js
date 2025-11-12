@@ -53,7 +53,27 @@ export default function Home() {
       </main>
       <Footer />
       <style jsx>{`
-        .home { background: #fff; }
+        .home { 
+          background: #fff;
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+          width: 100%;
+          overflow-x: hidden;
+        }
+        .home main {
+          flex: 1;
+          width: 100%;
+          overflow-x: hidden;
+        }
+        @media (max-width: 768px) {
+          .home {
+            overflow-x: hidden;
+          }
+          .home main {
+            overflow-x: hidden;
+          }
+        }
       `}</style>
     </div>
   );

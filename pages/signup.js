@@ -266,9 +266,41 @@ export default function SignupPage() {
           }
         }
         @media (max-width: 600px) {
+          .auth-shell {
+            padding: 4rem 1rem 3rem;
+          }
           .auth-card {
             padding: 2.1rem 1.75rem 2rem;
             border-radius: 1.35rem;
+          }
+          .card-header h1 {
+            font-size: 1.75rem;
+          }
+          .card-header p {
+            font-size: 0.9rem;
+          }
+        }
+        @media (max-width: 480px) {
+          .auth-shell {
+            padding: 3rem 1rem 2.5rem;
+          }
+          .auth-card {
+            padding: 1.85rem 1.5rem 1.75rem;
+            gap: 1.5rem;
+          }
+          .card-header h1 {
+            font-size: 1.6rem;
+          }
+          .form {
+            gap: 1.15rem;
+          }
+          input {
+            padding: 0.85rem 0.95rem;
+            font-size: 0.95rem;
+          }
+          button {
+            padding: 0.95rem 1.2rem;
+            font-size: 0.95rem;
           }
         }
         @media (prefers-reduced-motion: reduce) {
