@@ -1,9 +1,11 @@
 import connectDB from '../../../lib/db';
 import User from '../../../models/User';
-import { getUserFromRequest } from '../../../lib/auth';
+import Role from '../../../models/Role';
+import authMiddleware from '../../../middlewares/authMiddleware';
+import roleMiddleware from '../../../middlewares/roleMiddleware';
+import { jsonError, jsonSuccess } from '../../../lib/response';
 
 export default async function handler(req, res) {
-  res.setHeader('Content-Type', 'application/json');
   const { method, query: { id } } = req;
   await connectDB();
 
@@ -11,45 +13,59 @@ export default async function handler(req, res) {
     case 'GET': {
       try {
         const user = await User.findById(id).select('-password');
-        if (!user) return res.status(404).json({ message: 'User not found' });
-        return res.status(200).json({ user });
+        if (!user) return jsonError(res, 404, 'User not found');
+        return jsonSuccess(res, 200, 'Ok', { user });
       } catch (err) {
-        return res.status(500).json({ message: 'Failed to fetch user', error: err.message });
+        return jsonError(res, 500, 'Failed to fetch user', err.message);
       }
     }
     case 'PUT': {
       try {
-        const currentUser = await getUserFromRequest(req);
-        if (!currentUser) return res.status(401).json({ message: 'Unauthorized' });
+        const currentUser = await authMiddleware(req, res);
+        if (!currentUser) return;
         const update = req.body || {};
         // Prevent role changes unless admin
-        if (update.role && currentUser.role !== 'admin') delete update.role;
+        let roleRefUpdate = null;
+        if (update.role) {
+          if (!roleMiddleware(['admin', 'superadmin'])(req, res)) return;
+          const normalizedRole = typeof update.role === 'string' ? update.role.trim().toLowerCase() : '';
+          if (!normalizedRole) {
+            return jsonError(res, 400, 'Role must be a non-empty string');
+          }
+          const roleDoc = await Role.findOne({ name: normalizedRole });
+          if (!roleDoc) {
+            return jsonError(res, 400, 'Role does not exist');
+          }
+          update.role = normalizedRole;
+          roleRefUpdate = roleDoc._id;
+        }
         if (update.password) delete update.password; // Use dedicated password change flow if needed
+        if (roleRefUpdate) {
+          update.roleRef = roleRefUpdate;
+        }
         const user = await User.findByIdAndUpdate(id, update, { new: true, runValidators: true }).select('-password');
-        if (!user) return res.status(404).json({ message: 'User not found' });
-        return res.status(200).json({ user });
+        if (!user) return jsonError(res, 404, 'User not found');
+        return jsonSuccess(res, 200, 'User updated', { user });
       } catch (err) {
-        return res.status(500).json({ message: 'Failed to update user', error: err.message });
+        return jsonError(res, 500, 'Failed to update user', err.message);
       }
     }
     case 'DELETE': {
       try {
-        const currentUser = await getUserFromRequest(req);
-        if (!currentUser || currentUser.role !== 'admin') {
-          return res.status(403).json({ message: 'Forbidden' });
-        }
+        const currentUser = await authMiddleware(req, res);
+        if (!currentUser) return;
+        if (!roleMiddleware(['admin', 'superadmin'])(req, res)) return;
         const user = await User.findByIdAndDelete(id).select('-password');
-        if (!user) return res.status(404).json({ message: 'User not found' });
-        return res.status(200).json({ user });
+        if (!user) return jsonError(res, 404, 'User not found');
+        return jsonSuccess(res, 200, 'User deleted', { user });
       } catch (err) {
-        return res.status(500).json({ message: 'Failed to delete user', error: err.message });
+        return jsonError(res, 500, 'Failed to delete user', err.message);
       }
     }
     default: {
       res.setHeader('Allow', ['GET', 'PUT', 'DELETE']);
-      return res.status(405).json({ message: `Method ${method} not allowed` });
+      return jsonError(res, 405, `Method ${method} not allowed`);
     }
   }
 }
-
 

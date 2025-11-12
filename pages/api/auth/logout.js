@@ -1,13 +1,11 @@
-import { clearAuthCookie } from '../../../lib/auth';
+import { logout } from '../../../controllers/authController';
+import { jsonError } from '../../../lib/response';
 
 export default async function handler(req, res) {
-  res.setHeader('Content-Type', 'application/json');
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
-    return res.status(405).json({ message: `Method ${req.method} not allowed` });
+    return jsonError(res, 405, `Method ${req.method} not allowed`);
   }
-  clearAuthCookie(res);
-  return res.status(200).json({ message: 'Logged out' });
+  return logout(req, res);
 }
-
 

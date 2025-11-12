@@ -15,10 +15,11 @@ export async function getServerSideProps(context) {
       return { redirect: { destination: '/login', permanent: false } };
     }
     const data = await res.json();
-    if (!data.user) {
+    const user = data?.user || data?.data?.user || null;
+    if (!user) {
       return { redirect: { destination: '/login', permanent: false } };
     }
-    return { props: { user: data.user } };
+    return { props: { user } };
   } catch {
     return { redirect: { destination: '/login', permanent: false } };
   }

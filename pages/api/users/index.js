@@ -1,9 +1,17 @@
 import connectDB from '../../../lib/db';
 import User from '../../../models/User';
-import { getUserFromRequest } from '../../../lib/auth';
+import Role from '../../../models/Role';
+import authMiddleware from '../../../middlewares/authMiddleware';
+import roleMiddleware from '../../../middlewares/roleMiddleware';
+import { jsonError, jsonSuccess } from '../../../lib/response';
+
+async function ensureBaseRole() {
+  const existing = await Role.findOne({ name: 'base_user' });
+  if (existing) return existing;
+  return Role.create({ name: 'base_user', description: 'Default role for new users' });
+}
 
 export default async function handler(req, res) {
-  res.setHeader('Content-Type', 'application/json');
   const { method } = req;
   await connectDB();
 
@@ -11,35 +19,45 @@ export default async function handler(req, res) {
     case 'GET': {
       try {
         const users = await User.find().select('-password').sort({ createdAt: -1 });
-        return res.status(200).json({ users });
+        return jsonSuccess(res, 200, 'Ok', { users });
       } catch (err) {
-        return res.status(500).json({ message: 'Failed to fetch users', error: err.message });
+        return jsonError(res, 500, 'Failed to fetch users', err.message);
       }
     }
     case 'POST': {
       try {
-        const currentUser = await getUserFromRequest(req);
-        if (!currentUser || currentUser.role !== 'admin') {
-          return res.status(403).json({ message: 'Forbidden' });
-        }
+        const user = await authMiddleware(req, res);
+        if (!user) return;
+        if (!roleMiddleware(['admin', 'superadmin'])(req, res)) return;
         const { name, email, password, role } = req.body || {};
         if (!name || !email || !password) {
-          return res.status(400).json({ message: 'Name, email, and password are required' });
+          return jsonError(res, 400, 'Name, email, and password are required');
         }
         const exists = await User.findOne({ email });
-        if (exists) return res.status(409).json({ message: 'Email already in use' });
-        const user = await User.create({ name, email, password, role });
-        const safe = { id: user._id, name: user.name, email: user.email, role: user.role };
-        return res.status(201).json({ user: safe });
+        if (exists) return jsonError(res, 409, 'Email already in use');
+        const normalizedRole = typeof role === 'string' && role.trim() ? role.trim().toLowerCase() : 'base_user';
+        let roleRef = null;
+        if (normalizedRole === 'base_user') {
+          const baseRole = await ensureBaseRole();
+          roleRef = baseRole._id;
+        } else {
+          const roleDoc = await Role.findOne({ name: normalizedRole });
+          if (!roleDoc) {
+            return jsonError(res, 400, 'Role does not exist');
+          }
+          roleRef = roleDoc._id;
+        }
+        const created = await User.create({ name, email, password, role: normalizedRole, roleRef });
+        const safe = { id: created._id, name: created.name, email: created.email, role: created.role };
+        return jsonSuccess(res, 201, 'User created', { user: safe });
       } catch (err) {
-        return res.status(500).json({ message: 'Failed to create user', error: err.message });
+        return jsonError(res, 500, 'Failed to create user', err.message);
       }
     }
     default: {
       res.setHeader('Allow', ['GET', 'POST']);
-      return res.status(405).json({ message: `Method ${method} not allowed` });
+      return jsonError(res, 405, `Method ${method} not allowed`);
     }
   }
 }
-
 

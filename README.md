@@ -27,6 +27,11 @@ Keep all existing MongoDB and Next.js setup **intact**, while adding foundationa
 | `/api/auth/signup` | **POST** | Register a new user |
 | `/api/auth/login` | **POST** | Authenticate user credentials |
 | `/api/auth/logout` | **POST** | Terminate user session |
+| `/api/auth/me` | **GET** | Fetch logged-in user profile |
+| `/api/setup/create-superadmin` | **POST** | One-time superadmin bootstrap (requires setup token) |
+| `/api/roles/create` | **POST** | Create a new role definition (admin/superadmin) |
+| `/api/roles/list` | **GET** | List all available roles |
+| `/api/roles/:id` | **DELETE** | Remove an existing role (admin/superadmin) |
 | `/api/funding-opportunity/create` | **POST** | Create or dump new funding data |
 | `/api/funding-opportunity/list` | **GET** | Retrieve structured funding opportunities |
 | `/api/funding-opportunity/:id` | **GET** | Fetch a specific opportunity by ID |
@@ -80,6 +85,8 @@ It enables automated data ingestion, scoring, and access for funding, grants, RF
 | **POST** | `/api/auth/logout` | Log out and clear session |
 | **GET** | `/api/auth/me` | Fetch logged-in user data |
 
+All JWTs now embed the authenticated user's `role`, and every signup is assigned the default `base_user` role unless elevated by an administrator.
+
 ---
 
 ### 💰 Funding Opportunities  
@@ -116,6 +123,8 @@ proof-response/
 ├── pages/
 │   ├── api/
 │   │   ├── auth/                    # Auth endpoints
+│   │   ├── roles/                   # Role management endpoints
+│   │   ├── setup/                   # Bootstrap/setup routes
 │   │   ├── funding-opportunity/     # Funding endpoints
 │   │   ├── newCandidate.js          # Candidate API
 │   │   ├── requestIntro.js          # Intro API
@@ -126,24 +135,44 @@ proof-response/
 │   └── _app.js                      # App wrapper
 │
 ├── controllers/
-│   └── fundingController.js
+│   ├── authController.js
+│   ├── fundingController.js
+│   └── roleController.js
+│
+├── middlewares/
+│   ├── authMiddleware.js
+│   └── roleMiddleware.js
 │
 ├── models/
+│   ├── Role.js
 │   ├── User.js
 │   └── FundingOpportunity.js
 │
 ├── utils/
-│   ├── response.js
+│   ├── asyncHandler.js
+│   ├── cors.js
+│   ├── index.js
 │   ├── logger.js
 │   └── proofscore.js
-│
 ├── lib/
-│   └── db.js
+│   ├── auth.js
+│   ├── config.js
+│   ├── db.js
+│   └── response.js
 │
 ├── .env.example
 ├── next.config.js
 └── package.json
 ```
+
+---
+
+### 🛡️ Role-Based Access Control
+
+- Core roles seeded by default: `superadmin`, `admin`, `hr`, `marketing`, `developer`, and `base_user`.
+- `/api/setup/create-superadmin` bootstraps the first superadmin when called with `SUPERADMIN_SETUP_TOKEN`.
+- Role management endpoints live under `/api/roles/**` and are protected by admin or superadmin privileges.
+- New signups inherit the `base_user` role automatically; roles can be reassigned later via user management flows.
 
 ---
 
@@ -166,6 +195,7 @@ Create `.env` file from the example:
 MONGODB_URI=mongodb://127.0.0.1:27017/proofresponse
 JWT_SECRET=your_secret_key
 NEXT_PUBLIC_BASE_URL=http://localhost:3000
+SUPERADMIN_SETUP_TOKEN=bootstrap_token_for_first_superadmin
 ```
 
 Run server:
