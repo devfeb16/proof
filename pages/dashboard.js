@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
 import DashboardLayout from '../components/DashboardLayout';
 import SettingsPanel from '../components/dashboard/SettingsPanel';
+import UserOverviewTable from '../components/dashboard/UserOverviewTable';
 
 export async function getServerSideProps(context) {
   const { req } = context;
@@ -57,29 +58,7 @@ const FALLBACK_NAV = [
 
 const SECTION_DESCRIPTORS = {
   overview: {
-    subtitle: 'Get a quick summary of your workspace and pick up right where you left off.',
-    panels: [
-      {
-        title: 'Snapshot',
-        description: 'Key metrics and highlights tailored to your role will appear here.',
-        meta: 'Coming soon',
-      },
-      {
-        title: 'Recent Activity',
-        description: 'Monitor approvals, submissions, and notes across your team.',
-      },
-    ],
-    listTitle: 'Suggested actions',
-    list: [
-      {
-        title: 'Review new updates',
-        description: 'Scan through recent changes to stay aligned with your team.',
-      },
-      {
-        title: 'Set your priorities',
-        description: 'Pin the sections you visit most often for faster access.',
-      },
-    ],
+    body: () => <UserOverviewTable />,
   },
   applications: {
     subtitle: 'Track the status of each funding application at a glance.',
@@ -251,6 +230,7 @@ export default function Dashboard({ user }) {
   const initialSection = useMemo(() => primaryNav[0]?.key || FALLBACK_NAV[0].key, [primaryNav]);
   const [activeSection, setActiveSection] = useState(initialSection);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const isOverviewSection = activeSection === 'overview';
 
   useEffect(() => {
     if (!primaryNav.length) return;
@@ -318,12 +298,12 @@ export default function Dashboard({ user }) {
       onLogout={handleLogout}
       isLoggingOut={isLoggingOut}
     >
-      <section className="section">
+      <section className={`section ${isOverviewSection ? 'section--compact' : ''}`}>
         <header className="section-header">
           <h1 className="section-title">{sectionTitle}</h1>
-          <p className="section-subtitle">{sectionSubtitle}</p>
+          {sectionSubtitle && <p className="section-subtitle">{sectionSubtitle}</p>}
         </header>
-        <div className="section-body">
+        <div className={`section-body ${isOverviewSection ? 'section-body--compact' : ''}`}>
           {activeSection === 'settings' ? (
             <SettingsPanel
               user={sessionUser}
@@ -379,7 +359,7 @@ export default function Dashboard({ user }) {
       <style jsx>{`
         .section {
           display: grid;
-          gap: 2rem;
+          gap: 1rem;
           min-height: 100%;
           margin: 0;
           padding: 0;
@@ -411,8 +391,24 @@ export default function Dashboard({ user }) {
 
         .section-body {
           display: grid;
-          gap: 2rem;
-          padding-bottom: 1rem;
+          gap: 1.2rem;
+          padding-bottom: 0.35rem;
+        }
+
+        .section--compact {
+          gap: 0.3rem;
+        }
+
+        .section-body--compact {
+          display: flex;
+          gap: 0;
+          padding-bottom: 0;
+          margin-top: 0;
+        }
+
+        .section-body--compact > * {
+          flex: 1 1 100%;
+          min-width: 0;
         }
 
         .section-panels {

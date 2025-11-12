@@ -12,9 +12,11 @@ const UserSchema = new mongoose.Schema(
      * Enables future migration to managed roles without breaking existing data.
      */
     roleRef: { type: mongoose.Schema.Types.ObjectId, ref: 'Role', default: null },
-    createdAt: { type: Date, default: Date.now },
   },
-  { versionKey: false }
+  {
+    timestamps: true,
+    versionKey: false,
+  }
 );
 
 // Hash password before save if modified

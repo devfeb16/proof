@@ -1,0 +1,221 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  background: #ffffff;
+  border-radius: 1rem;
+  padding: 1.1rem 1.25rem;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.07);
+  width: 100%;
+  max-width: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.28rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.subtitle {
+  margin: 0;
+  color: #4b5563;
+  font-size: 0.93rem;
+  line-height: 1.55;
+  max-width: 64ch;
+}
+
+.feedback {
+  border-radius: 0.65rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+
+.feedbackInfo {
+  background: rgba(37, 99, 235, 0.1);
+  color: #1d4ed8;
+}
+
+.feedbackError {
+  background: rgba(239, 68, 68, 0.14);
+  color: #b91c1c;
+}
+
+.gridWrapper {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  border-radius: 0.75rem;
+  background: #ffffff;
+}
+
+.grid {
+  --ag-font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --ag-font-size: 0.95rem;
+  --ag-foreground-color: #0f172a;
+  --ag-secondary-foreground-color: #475569;
+  --ag-header-foreground-color: #0f172a;
+  --ag-header-background-color: #edf2ff;
+  --ag-header-height: 64px;
+  --ag-row-height: 70px;
+  --ag-grid-size: 8px;
+  --ag-borders: 1px solid #e2e8f0;
+  --ag-row-border-style: solid;
+  --ag-row-border-color: #e2e8f0;
+  --ag-odd-row-background-color: #f8fafc;
+  --ag-header-column-resize-handle-color: rgba(37, 99, 235, 0.35);
+  --ag-selected-row-background-color: rgba(59, 130, 246, 0.12);
+  --ag-row-hover-color: rgba(59, 130, 246, 0.1);
+  --ag-range-selection-border-color: rgba(37, 99, 235, 0.45);
+
+  width: min(100%, 1400px);
+  min-width: 640px;
+  border-radius: 0.75rem;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.grid :global(.ag-root-wrapper) {
+  border: none;
+  border-radius: 0.75rem;
+  min-height: 260px;
+}
+
+.grid :global(.ag-header) {
+  border-bottom: 1px solid #dbeafe;
+}
+
+.grid :global(.ag-header-row) {
+  font-weight: 600;
+}
+
+.grid :global(.ag-header-cell) {
+  padding: 0 16px;
+}
+
+.grid :global(.ag-cell) {
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  min-height: inherit;
+}
+
+.grid :global(.ag-cell-value) {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.grid :global(.ag-row:hover .ag-cell) {
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.gridWrapper::-webkit-scrollbar {
+  height: 10px;
+}
+
+.gridWrapper::-webkit-scrollbar-track {
+  background: #e2e8f0;
+  border-radius: 999px;
+}
+
+.gridWrapper::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 999px;
+}
+
+.gridWrapper::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+.grid :global(.ag-paging-panel) {
+  padding: 0.65rem 1rem;
+  border-top: 1px solid #e2e8f0;
+  color: #4b5563;
+  font-size: 0.88rem;
+}
+
+.grid :global(.ag-icon) {
+  color: #2563eb;
+}
+
+.grid :global(.ag-overlay-loading-center) {
+  border-radius: 0.75rem;
+  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.15);
+  background: rgba(59, 130, 246, 0.04);
+}
+
+.actionButtons {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.actionButton {
+  font-size: 0.82rem;
+  font-weight: 500;
+  line-height: 1.2;
+  border-radius: 0.55rem;
+  border: 1px solid transparent;
+  padding: 0.35rem 0.7rem;
+  cursor: not-allowed;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.actionButtonSecondary {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.actionButtonDanger {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.actionButton:focus-visible {
+  outline: 2px solid rgba(59, 130, 246, 0.6);
+  outline-offset: 2px;
+}
+
+@media (max-width: 960px) {
+  .container {
+    padding: 1rem;
+    gap: 0.75rem;
+  }
+
+  .title {
+    font-size: 1.18rem;
+  }
+}
+
+@media (max-width: 720px) {
+  .container {
+    padding: 0.85rem;
+  }
+
+  .subtitle {
+    font-size: 0.88rem;
+  }
+
+  .grid :global(.ag-header-cell),
+  .grid :global(.ag-cell) {
+    padding: 0 12px;
+  }
+
+  .grid {
+    min-width: 100%;
+  }
+}
+
+
