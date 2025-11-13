@@ -20,7 +20,7 @@ function sanitizeUser(userDoc) {
     id: userDoc._id,
     name: userDoc.name,
     email: userDoc.email,
-    role: userDoc.role || 'base_user',
+    role: userDoc.role || 'hr',
     roleRef: userDoc.roleRef,
     createdAt: userDoc.createdAt,
   };
@@ -48,13 +48,13 @@ export async function signup(req, res) {
     if (existing) {
       return jsonError(res, 409, 'Email already registered');
     }
-    const baseRole = await ensureRole('base_user', 'Default role for new users');
+    const hrRole = await ensureRole('hr', 'Human resources role');
     const user = await User.create({
       name,
       email,
       password,
-      role: baseRole.name,
-      roleRef: baseRole._id,
+      role: hrRole.name,
+      roleRef: hrRole._id,
     });
     const token = signToken({ id: user._id, role: user.role });
     setAuthCookie(res, token);
