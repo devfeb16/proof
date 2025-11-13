@@ -67,11 +67,10 @@ const NAVIGATION_BY_ROLE = {
     { key: 'reports', label: 'Reports & Analytics' },
   ],
   base_user: [
-    { key: 'overview', label: 'Overview' },
+    { key: 'overview', label: 'My Applications' },
     { key: 'jobs', label: 'Jobs' },
     { key: 'transcripts', label: 'Transcripts' },
     { key: 'vendors', label: 'Vendors' },
-    { key: 'applications', label: 'My Applications' },
     { key: 'resources', label: 'Resources' },
     { key: 'support', label: 'Support' },
   ],
@@ -85,7 +84,13 @@ const FALLBACK_NAV = [
 
 const SECTION_DESCRIPTORS = {
   overview: {
-    body: (user) => <UserOverviewTable currentUser={user} />,
+    body: (user) => {
+      const normalizedRole = (user?.role || '').toLowerCase();
+      if (normalizedRole === 'base_user') {
+        return null;
+      }
+      return <UserOverviewTable currentUser={user} />;
+    },
   },
   jobs: {
     subtitle: 'Review intake details and manage job assignments.',
@@ -103,24 +108,73 @@ const SECTION_DESCRIPTORS = {
     body: (user) => <VendorManager user={user} />,
   },
   applications: {
-    subtitle: 'Track the status of each funding application at a glance.',
-    panels: [
-      {
-        title: 'In Review',
-        description: 'See which submissions are currently under review and who is assigned.',
-        meta: '2 pending',
-      },
-      {
-        title: 'Upcoming deadlines',
-        description: 'Stay ahead of due dates with timely reminders and alerts.',
-      },
-    ],
-    listTitle: 'Applications toolkit',
-    list: [
-      { title: 'Start a new application' },
-      { title: 'View submission history' },
-      { title: 'Download templates' },
-    ],
+    hideHeader: true,
+    body: (user) => (
+      <div className="applications-overview">
+        <div className="applications-hero">
+          <span className="applications-hero-pill">Stay ready</span>
+          <p>
+            Keep an eye on the grants and submissions associated with{' '}
+            <strong>{user?.name || user?.email || 'your account'}</strong>. This space highlights the
+            essentials so you always know what needs attention next.
+          </p>
+        </div>
+        <div className="applications-metrics" aria-label="Application summary">
+          <div className="applications-metric">
+            <span className="applications-metric-label">Active submissions</span>
+            <span className="applications-metric-value">3 in progress</span>
+            <span className="applications-metric-note">Awaiting review confirmations</span>
+          </div>
+          <div className="applications-metric">
+            <span className="applications-metric-label">Next deadline</span>
+            <span className="applications-metric-value">Dec 12</span>
+            <span className="applications-metric-note">Draft narrative due in 5 days</span>
+          </div>
+          <div className="applications-metric">
+            <span className="applications-metric-label">Supporting docs</span>
+            <span className="applications-metric-value">2 outstanding</span>
+            <span className="applications-metric-note">Upload budget + memorandums</span>
+          </div>
+        </div>
+        <div className="applications-basic-grid">
+          <article className="applications-basic-card applications-basic-card--focus">
+            <span className="applications-basic-icon" aria-hidden="true" />
+            <span className="applications-basic-label">Current focus</span>
+            <span className="applications-basic-value">Prepare supporting documents</span>
+            <p className="applications-basic-note">Double-check eligibility, budget alignment, and required signatures.</p>
+          </article>
+          <article className="applications-basic-card applications-basic-card--upcoming">
+            <span className="applications-basic-icon" aria-hidden="true" />
+            <span className="applications-basic-label">Upcoming items</span>
+            <span className="applications-basic-value">Gather impact metrics</span>
+            <p className="applications-basic-note">Summarize outcomes, testimonials, and reporting highlights.</p>
+          </article>
+          <article className="applications-basic-card applications-basic-card--support">
+            <span className="applications-basic-icon" aria-hidden="true" />
+            <span className="applications-basic-label">Need help?</span>
+            <span className="applications-basic-value">Reach out to your program lead</span>
+            <p className="applications-basic-note">Share blockers early so reviewers can support the submission.</p>
+          </article>
+        </div>
+        <div className="applications-actions">
+          <h2>Quick references</h2>
+          <ul className="applications-actions-list">
+            <li>
+              <span>Download the latest application template</span>
+            </li>
+            <li>
+              <span>Review your submission checklist</span>
+            </li>
+            <li>
+              <span>Update contact details for collaborators</span>
+            </li>
+            <li>
+              <span>Confirm compliance documents are current</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    ),
   },
   resources: {
     subtitle: 'Centralize guidelines, FAQs, and documentation for your team.',
@@ -263,7 +317,7 @@ export default function Dashboard({ user }) {
   const initialSection = useMemo(() => primaryNav[0]?.key || FALLBACK_NAV[0].key, [primaryNav]);
   const [activeSection, setActiveSection] = useState(initialSection);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const isOverviewSection = activeSection === 'overview';
+  const isOverviewSection = activeSection === 'overview' && normalizedRole !== 'base_user';
 
   useEffect(() => {
     if (!primaryNav.length) return;
@@ -301,8 +355,13 @@ export default function Dashboard({ user }) {
     }
   }, [isLoggingOut, router]);
 
+  const resolvedSectionKey =
+    normalizedRole === 'base_user' && activeSection === 'overview'
+      ? 'applications'
+      : activeSection;
+
   const activeNavItem = primaryNav.find((item) => item.key === activeSection);
-  const sectionDescriptor = SECTION_DESCRIPTORS[activeSection] || {
+  const sectionDescriptor = SECTION_DESCRIPTORS[resolvedSectionKey] || {
     subtitle: 'This area will be available soon.',
     panels: [
       {
@@ -533,6 +592,271 @@ export default function Dashboard({ user }) {
           border-radius: 1.1rem;
           padding: 1.6rem;
           box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+        }
+
+        .applications-overview {
+          position: relative;
+          display: grid;
+          gap: 1.75rem;
+          padding: 2rem;
+          border-radius: 1.25rem;
+          background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(236, 72, 153, 0.1));
+          border: 1px solid rgba(148, 163, 184, 0.18);
+          overflow: hidden;
+        }
+
+        .applications-overview::before {
+          content: '';
+          position: absolute;
+          inset: -40% -20% auto -20%;
+          height: 240px;
+          background: radial-gradient(circle at top, rgba(37, 99, 235, 0.2), transparent 70%);
+          opacity: 0.65;
+          pointer-events: none;
+        }
+
+        .applications-overview::after {
+          content: '';
+          position: absolute;
+          inset: auto -25% -60% -25%;
+          height: 320px;
+          background: radial-gradient(circle at bottom, rgba(236, 72, 153, 0.18), transparent 70%);
+          opacity: 0.6;
+          pointer-events: none;
+        }
+
+        .applications-overview > * {
+          position: relative;
+          z-index: 1;
+        }
+
+        .applications-hero {
+          display: grid;
+          gap: 0.75rem;
+          padding: 1.35rem 1.6rem;
+          border-radius: 1.1rem;
+          background: rgba(255, 255, 255, 0.9);
+          border: 1px solid rgba(148, 163, 184, 0.26);
+          box-shadow: 0 16px 36px rgba(30, 41, 59, 0.16);
+        }
+
+        .applications-hero-pill {
+          justify-self: flex-start;
+          padding: 0.35rem 0.9rem;
+          border-radius: 999px;
+          background: rgba(37, 99, 235, 0.12);
+          color: #1d4ed8;
+          font-weight: 600;
+          font-size: 0.85rem;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+        }
+
+        .applications-hero p {
+          margin: 0;
+          color: #0f172a;
+          line-height: 1.65;
+          font-size: 1.05rem;
+        }
+
+        .applications-hero strong {
+          color: #1d4ed8;
+        }
+
+        .applications-metrics {
+          display: grid;
+          gap: 1rem;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+
+        .applications-metric {
+          display: grid;
+          gap: 0.4rem;
+          padding: 0.95rem 1.1rem;
+          border-radius: 1rem;
+          background: rgba(15, 23, 42, 0.72);
+          color: #e2e8f0;
+          box-shadow: 0 20px 42px rgba(15, 23, 42, 0.28);
+          border: 1px solid rgba(148, 163, 184, 0.28);
+          backdrop-filter: blur(6px);
+        }
+
+        .applications-metric-label {
+          font-size: 0.82rem;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          font-weight: 600;
+          color: rgba(226, 232, 240, 0.75);
+        }
+
+        .applications-metric-value {
+          font-size: 1.25rem;
+          font-weight: 700;
+          color: #f8fafc;
+        }
+
+        .applications-metric-note {
+          font-size: 0.9rem;
+          opacity: 0.76;
+          margin: 0;
+        }
+
+        .applications-basic-grid {
+          display: grid;
+          gap: 1.1rem;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        }
+
+        .applications-basic-card {
+          position: relative;
+          display: grid;
+          gap: 0.65rem;
+          padding: 1.35rem 1.2rem 1.4rem;
+          border-radius: 1rem;
+          background: rgba(255, 255, 255, 0.96);
+          border: 1px solid rgba(203, 213, 225, 0.7);
+          box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+          overflow: hidden;
+        }
+
+        .applications-basic-card::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          opacity: 0.6;
+          pointer-events: none;
+        }
+
+        .applications-basic-card--focus::before {
+          background: linear-gradient(135deg, rgba(37, 99, 235, 0.2), transparent 70%);
+        }
+
+        .applications-basic-card--upcoming::before {
+          background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), transparent 70%);
+        }
+
+        .applications-basic-card--support::before {
+          background: linear-gradient(135deg, rgba(236, 72, 153, 0.2), transparent 70%);
+        }
+
+        .applications-basic-icon {
+          width: 42px;
+          height: 42px;
+          border-radius: 14px;
+          background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(37, 99, 235, 0.6));
+          border: 1px solid rgba(96, 165, 250, 0.6);
+          box-shadow: 0 12px 28px rgba(37, 99, 235, 0.25);
+        }
+
+        .applications-basic-card--upcoming .applications-basic-icon {
+          background: linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(5, 150, 105, 0.6));
+          border-color: rgba(110, 231, 183, 0.6);
+          box-shadow: 0 12px 28px rgba(16, 185, 129, 0.24);
+        }
+
+        .applications-basic-card--support .applications-basic-icon {
+          background: linear-gradient(135deg, rgba(236, 72, 153, 0.3), rgba(219, 39, 119, 0.6));
+          border-color: rgba(251, 191, 185, 0.6);
+          box-shadow: 0 12px 28px rgba(236, 72, 153, 0.25);
+        }
+
+        .applications-basic-label {
+          font-size: 0.85rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          color: #475569;
+        }
+
+        .applications-basic-value {
+          font-size: 1.1rem;
+          font-weight: 600;
+          color: #0f172a;
+        }
+
+        .applications-basic-note {
+          margin: 0;
+          color: #475569;
+          line-height: 1.65;
+          font-size: 0.95rem;
+        }
+
+        .applications-actions {
+          display: grid;
+          gap: 0.85rem;
+          padding: 1.2rem 1.4rem 1.5rem;
+          border-radius: 1rem;
+          background: rgba(15, 23, 42, 0.85);
+          box-shadow: 0 18px 42px rgba(15, 23, 42, 0.25);
+        }
+
+        .applications-actions h2 {
+          margin: 0;
+          font-size: 1.1rem;
+          font-weight: 600;
+          color: #e2e8f0;
+        }
+
+        .applications-actions-list {
+          margin: 0;
+          padding: 0;
+          display: grid;
+          gap: 0.6rem;
+          list-style: none;
+        }
+
+        .applications-actions-list li {
+          position: relative;
+          display: flex;
+          gap: 0.75rem;
+          align-items: flex-start;
+          padding: 0.85rem 1rem;
+          border-radius: 0.85rem;
+          background: rgba(15, 23, 42, 0.78);
+          border: 1px solid rgba(148, 163, 184, 0.35);
+          color: #cbd5f5;
+        }
+
+        .applications-actions-list li::before {
+          content: '';
+          width: 10px;
+          height: 10px;
+          border-radius: 999px;
+          background: linear-gradient(135deg, #60a5fa, #a855f7);
+          margin-top: 0.4rem;
+          flex-shrink: 0;
+        }
+
+        .applications-actions-list span {
+          line-height: 1.55;
+        }
+
+        @media (max-width: 720px) {
+          .applications-overview {
+            padding: 1.4rem;
+          }
+          .applications-hero {
+            padding: 1.1rem 1.2rem;
+          }
+          .applications-metrics {
+            grid-template-columns: 1fr;
+          }
+          .applications-basic-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .applications-overview {
+            padding: 1.1rem;
+            border-radius: 1rem;
+          }
+          .applications-basic-card {
+            padding: 1rem 1rem 1.1rem;
+          }
+          .applications-actions {
+            padding: 1rem 1.1rem 1.2rem;
+          }
         }
 
         .empty-state {
