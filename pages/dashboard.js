@@ -7,6 +7,7 @@ import JobManager from '../components/dashboard/JobManager';
 import TranscriptManager from '../components/dashboard/TranscriptManager';
 import VendorManager from '../components/dashboard/VendorManager';
 import PerformanceDashboard from '../components/dashboard/reports/PerformanceDashboard';
+import LoxoPanel from '../components/dashboard/LoxoPanel';
 
 export async function getServerSideProps(context) {
   const { req } = context;
@@ -38,6 +39,7 @@ const NAVIGATION_BY_ROLE = {
     { key: 'overview', label: 'Overview' },
     { key: 'user-management', label: 'User Management' },
     { key: 'jobs', label: 'Jobs' },
+    { key: 'loxo', label: 'Loxo' },
     { key: 'transcripts', label: 'Transcripts' },
     { key: 'vendors', label: 'Vendors' },
     { key: 'funding', label: 'Funding Opportunities' },
@@ -46,6 +48,7 @@ const NAVIGATION_BY_ROLE = {
   admin: [
     { key: 'overview', label: 'Overview' },
     { key: 'jobs', label: 'Jobs' },
+    { key: 'loxo', label: 'Loxo' },
     { key: 'transcripts', label: 'Transcripts' },
     { key: 'vendors', label: 'Vendors' },
     { key: 'funding', label: 'Funding Opportunities' },
@@ -55,6 +58,7 @@ const NAVIGATION_BY_ROLE = {
   hr: [
     { key: 'overview', label: 'Overview' },
     { key: 'jobs', label: 'Jobs' },
+    { key: 'loxo', label: 'Loxo' },
     { key: 'transcripts', label: 'Transcripts' },
     { key: 'vendors', label: 'Vendors' },
     { key: 'reports', label: 'Reports & Analytics' },
@@ -62,6 +66,7 @@ const NAVIGATION_BY_ROLE = {
   hr_admin: [
     { key: 'overview', label: 'Overview' },
     { key: 'jobs', label: 'Jobs' },
+    { key: 'loxo', label: 'Loxo' },
     { key: 'transcripts', label: 'Transcripts' },
     { key: 'vendors', label: 'Vendors' },
     { key: 'reports', label: 'Reports & Analytics' },
@@ -96,6 +101,10 @@ const SECTION_DESCRIPTORS = {
     subtitle: 'Review intake details and manage job assignments.',
     hideHeader: true,
     body: (user) => <JobManager user={user} />,
+  },
+  loxo: {
+    hideHeader: true,
+    body: () => <LoxoPanel />,
   },
   transcripts: {
     subtitle: 'Analyze call transcripts and AI parsing confidence.',
