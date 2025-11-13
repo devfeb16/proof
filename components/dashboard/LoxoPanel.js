@@ -584,12 +584,17 @@ export default function LoxoPanel() {
               </button>
               <button
                 type="button"
-                className="loxo-panel__toggle"
+                className={`loxo-panel__toggle${
+                  collapsedSections.jobs ? ' loxo-panel__toggle--expand' : ' loxo-panel__toggle--collapse'
+                }`}
                 onClick={() => toggleSection('jobs')}
                 aria-expanded={!collapsedSections.jobs}
                 aria-controls="loxo-panel-jobs"
               >
-                {collapsedSections.jobs ? 'Expand' : 'Collapse'}
+                <span aria-hidden="true">{collapsedSections.jobs ? '▾' : '▴'}</span>
+                <span className="loxo-panel__toggle-text">
+                  {collapsedSections.jobs ? 'Expand' : 'Collapse'}
+                </span>
               </button>
             </div>
           </header>
@@ -722,12 +727,17 @@ export default function LoxoPanel() {
               </button>
               <button
                 type="button"
-                className="loxo-panel__toggle"
+                className={`loxo-panel__toggle${
+                  collapsedSections.jobDetail ? ' loxo-panel__toggle--expand' : ' loxo-panel__toggle--collapse'
+                }`}
                 onClick={() => toggleSection('jobDetail')}
                 aria-expanded={!collapsedSections.jobDetail}
                 aria-controls="loxo-panel-job-detail"
               >
-                {collapsedSections.jobDetail ? 'Expand' : 'Collapse'}
+                <span aria-hidden="true">{collapsedSections.jobDetail ? '▾' : '▴'}</span>
+                <span className="loxo-panel__toggle-text">
+                  {collapsedSections.jobDetail ? 'Expand' : 'Collapse'}
+                </span>
               </button>
             </div>
           </header>
@@ -777,12 +787,17 @@ export default function LoxoPanel() {
               </button>
               <button
                 type="button"
-                className="loxo-panel__toggle"
+                className={`loxo-panel__toggle${
+                  collapsedSections.allCandidates ? ' loxo-panel__toggle--expand' : ' loxo-panel__toggle--collapse'
+                }`}
                 onClick={() => toggleSection('allCandidates')}
                 aria-expanded={!collapsedSections.allCandidates}
                 aria-controls="loxo-panel-all-candidates"
               >
-                {collapsedSections.allCandidates ? 'Expand' : 'Collapse'}
+                <span aria-hidden="true">{collapsedSections.allCandidates ? '▾' : '▴'}</span>
+                <span className="loxo-panel__toggle-text">
+                  {collapsedSections.allCandidates ? 'Expand' : 'Collapse'}
+                </span>
               </button>
             </div>
           </header>
@@ -843,12 +858,17 @@ export default function LoxoPanel() {
               </button>
               <button
                 type="button"
-                className="loxo-panel__toggle"
+                className={`loxo-panel__toggle${
+                  collapsedSections.stage ? ' loxo-panel__toggle--expand' : ' loxo-panel__toggle--collapse'
+                }`}
                 onClick={() => toggleSection('stage')}
                 aria-expanded={!collapsedSections.stage}
                 aria-controls="loxo-panel-stage"
               >
-                {collapsedSections.stage ? 'Expand' : 'Collapse'}
+                <span aria-hidden="true">{collapsedSections.stage ? '▾' : '▴'}</span>
+                <span className="loxo-panel__toggle-text">
+                  {collapsedSections.stage ? 'Expand' : 'Collapse'}
+                </span>
               </button>
             </div>
           </header>
@@ -912,12 +932,19 @@ export default function LoxoPanel() {
               </button>
               <button
                 type="button"
-                className="loxo-panel__toggle"
+                className={`loxo-panel__toggle${
+                  collapsedSections.candidateDetail
+                    ? ' loxo-panel__toggle--expand'
+                    : ' loxo-panel__toggle--collapse'
+                }`}
                 onClick={() => toggleSection('candidateDetail')}
                 aria-expanded={!collapsedSections.candidateDetail}
                 aria-controls="loxo-panel-candidate-detail"
               >
-                {collapsedSections.candidateDetail ? 'Expand' : 'Collapse'}
+                <span aria-hidden="true">{collapsedSections.candidateDetail ? '▾' : '▴'}</span>
+                <span className="loxo-panel__toggle-text">
+                  {collapsedSections.candidateDetail ? 'Expand' : 'Collapse'}
+                </span>
               </button>
             </div>
           </header>
@@ -986,12 +1013,17 @@ export default function LoxoPanel() {
               </button>
               <button
                 type="button"
-                className="loxo-panel__toggle"
+                className={`loxo-panel__toggle${
+                  collapsedSections.preQualified ? ' loxo-panel__toggle--expand' : ' loxo-panel__toggle--collapse'
+                }`}
                 onClick={() => toggleSection('preQualified')}
                 aria-expanded={!collapsedSections.preQualified}
                 aria-controls="loxo-panel-pre-qualified-global"
               >
-                {collapsedSections.preQualified ? 'Expand' : 'Collapse'}
+                <span aria-hidden="true">{collapsedSections.preQualified ? '▾' : '▴'}</span>
+                <span className="loxo-panel__toggle-text">
+                  {collapsedSections.preQualified ? 'Expand' : 'Collapse'}
+                </span>
               </button>
             </div>
           </header>
@@ -1083,6 +1115,9 @@ export default function LoxoPanel() {
           box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1);
           display: grid;
           gap: 0.85rem;
+          width: 100%;
+          box-sizing: border-box;
+          overflow: hidden;
         }
 
         .loxo-panel__card--collapsed {
@@ -1094,6 +1129,8 @@ export default function LoxoPanel() {
           justify-content: space-between;
           align-items: flex-start;
           gap: 0.75rem;
+          width: 100%;
+          box-sizing: border-box;
         }
 
         .loxo-panel__card h3 {
@@ -1111,23 +1148,51 @@ export default function LoxoPanel() {
           align-items: center;
           flex-wrap: wrap;
           gap: 0.5rem;
+          width: 100%;
+          justify-content: flex-end;
         }
 
         .loxo-panel__toggle {
           border: none;
-          background: rgba(37, 99, 235, 0.12);
-          color: #1d4ed8;
           font-weight: 600;
           font-size: 0.85rem;
           padding: 0.35rem 0.75rem;
           border-radius: 0.65rem;
           cursor: pointer;
           transition: background 120ms ease, color 120ms ease;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.45rem;
+          white-space: nowrap;
         }
 
-        .loxo-panel__toggle:hover {
-          background: rgba(37, 99, 235, 0.18);
+        .loxo-panel__toggle span:first-child {
+          font-size: 1.05rem;
+          line-height: 1;
+        }
+
+        .loxo-panel__toggle--collapse {
+          background: rgba(59, 130, 246, 0.14);
+          color: #1d4ed8;
+        }
+
+        .loxo-panel__toggle--collapse:hover {
+          background: rgba(59, 130, 246, 0.22);
           color: #1e3a8a;
+        }
+
+        .loxo-panel__toggle--expand {
+          background: rgba(15, 118, 110, 0.12);
+          color: #0f766e;
+        }
+
+        .loxo-panel__toggle--expand:hover {
+          background: rgba(15, 118, 110, 0.2);
+          color: #115e59;
+        }
+
+        .loxo-panel__toggle-text {
+          font-size: 0.85rem;
         }
 
         .loxo-panel__button {
@@ -1257,6 +1322,8 @@ export default function LoxoPanel() {
           background: #ffffff;
           box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.14);
           max-width: 100%;
+          width: 100%;
+          box-sizing: border-box;
         }
 
         .loxo-panel__table-wrapper--compact {
@@ -1268,6 +1335,7 @@ export default function LoxoPanel() {
           border-collapse: collapse;
           font-size: 0.9rem;
           min-width: 320px;
+          table-layout: fixed;
         }
 
         .loxo-panel__table th,
@@ -1275,6 +1343,7 @@ export default function LoxoPanel() {
           padding: 0.65rem 0.75rem;
           border-bottom: 1px solid rgba(148, 163, 184, 0.25);
           text-align: left;
+          word-break: break-word;
         }
 
         .loxo-panel__table thead th {
@@ -1339,6 +1408,10 @@ export default function LoxoPanel() {
 
           .loxo-panel__table {
             min-width: 0;
+          }
+
+          .loxo-panel__actions {
+            justify-content: flex-start;
           }
         }
       `}</style>
