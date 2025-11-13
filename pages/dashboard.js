@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
 import DashboardLayout from '../components/DashboardLayout';
 import SettingsPanel from '../components/dashboard/SettingsPanel';
@@ -326,7 +326,6 @@ export default function Dashboard({ user }) {
   const initialSection = useMemo(() => primaryNav[0]?.key || FALLBACK_NAV[0].key, [primaryNav]);
   const [activeSection, setActiveSection] = useState(initialSection);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const hasBootstrappedRef = useRef(false);
 
   const resolveSectionKey = useCallback(
     (key) => {
@@ -343,6 +342,23 @@ export default function Dashboard({ user }) {
     [primaryNav]
   );
 
+  const updateUrlHash = useCallback((key) => {
+    if (typeof window === 'undefined') return;
+    try {
+      const url = new URL(window.location.href);
+      if (url.searchParams.has('section')) {
+        url.searchParams.delete('section');
+      }
+      url.hash = key ? key : '';
+      const next = `${url.pathname}${url.search}${url.hash}`;
+      window.history.replaceState(null, '', next);
+    } catch {
+      const basePath = `${window.location.pathname}${window.location.search}`;
+      const hashPart = key ? `#${key}` : '';
+      window.history.replaceState(null, '', `${basePath}${hashPart}`);
+    }
+  }, []);
+
   const sectionParam = router.query?.section;
 
   useEffect(() => {
@@ -351,7 +367,8 @@ export default function Dashboard({ user }) {
     const resolvedKey = resolveSectionKey(sectionParam);
     if (!resolvedKey) return;
     setActiveSection((prev) => (prev === resolvedKey ? prev : resolvedKey));
-  }, [router.isReady, sectionParam, resolveSectionKey]);
+    updateUrlHash(resolvedKey);
+  }, [router.isReady, sectionParam, resolveSectionKey, updateUrlHash]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
@@ -366,39 +383,15 @@ export default function Dashboard({ user }) {
       const resolvedKey = resolveSectionKey(hashValue);
       if (!resolvedKey) return;
       setActiveSection((prev) => (prev === resolvedKey ? prev : resolvedKey));
+      updateUrlHash(resolvedKey);
     };
 
     applyHashToState();
-    hasBootstrappedRef.current = true;
     window.addEventListener('hashchange', applyHashToState);
     return () => {
       window.removeEventListener('hashchange', applyHashToState);
     };
-  }, [resolveSectionKey]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (!activeSection) return;
-
-    let hashValue = window.location.hash.replace(/^#/, '');
-    try {
-      hashValue = decodeURIComponent(hashValue);
-    } catch {
-      // ignore decode errors and fall back to raw hash
-    }
-
-    if (!hasBootstrappedRef.current) {
-      return;
-    }
-
-    const basePath = `${window.location.pathname}${window.location.search}`;
-    const nextUrl = `${basePath}#${activeSection}`;
-    const currentUrl = hashValue ? `${basePath}#${hashValue}` : basePath;
-
-    if (currentUrl !== nextUrl) {
-      window.history.replaceState(null, '', nextUrl);
-    }
-  }, [activeSection]);
+  }, [resolveSectionKey, updateUrlHash]);
 
   const isOverviewSection = activeSection === 'overview' && normalizedRole !== 'base_user';
 
@@ -407,17 +400,33 @@ export default function Dashboard({ user }) {
     const hasActive = primaryNav.some((item) => item.key === activeSection);
     const isSettings = activeSection === 'settings';
     if (!hasActive && !isSettings) {
-      setActiveSection(primaryNav[0].key);
+      const fallbackKey = primaryNav[0].key;
+      setActiveSection(fallbackKey);
+      updateUrlHash(fallbackKey);
     }
-  }, [primaryNav, activeSection]);
+  }, [primaryNav, activeSection, updateUrlHash]);
 
-  const handleSelectNav = useCallback((key) => {
-    setActiveSection(key);
-  }, []);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!router.isReady) return;
+    if (!activeSection) return;
+    if (typeof sectionParam === 'string') return;
+    if (window.location.hash) return;
+    updateUrlHash(activeSection);
+  }, [activeSection, router.isReady, sectionParam, updateUrlHash]);
+
+  const handleSelectNav = useCallback(
+    (key) => {
+      setActiveSection(key);
+      updateUrlHash(key);
+    },
+    [updateUrlHash]
+  );
 
   const handleOpenSettings = useCallback(() => {
     setActiveSection('settings');
-  }, []);
+    updateUrlHash('settings');
+  }, [updateUrlHash]);
 
   const handleLogout = useCallback(async () => {
     if (isLoggingOut) return;
