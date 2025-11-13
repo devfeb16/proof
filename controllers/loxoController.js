@@ -5,6 +5,7 @@ import {
   fetchAllCandidatesFromAllJobs,
   fetchAllWorkflowStages,
   fetchJobById,
+  fetchCandidateById,
 } from '../services/loxoService.js';
 import { jsonError, jsonSuccess } from '../lib/response.js';
 
@@ -87,6 +88,25 @@ export async function getAllCandidatesInAJob(req, res, jobId) {
     });
   } catch (error) {
     return jsonError(res, 500, 'Failed to fetch candidates for job', error.message);
+  }
+}
+
+export async function getCandidateById(req, res, jobId, candidateId) {
+  if (!jobId) {
+    return jsonError(res, 400, 'Missing jobId');
+  }
+  if (!candidateId) {
+    return jsonError(res, 400, 'Missing candidateId');
+  }
+
+  try {
+    const candidate = await fetchCandidateById(jobId, candidateId);
+    if (!candidate) {
+      return jsonError(res, 404, 'Candidate not found');
+    }
+    return jsonSuccess(res, 200, 'Candidate fetched successfully', candidate);
+  } catch (error) {
+    return jsonError(res, 500, 'Failed to fetch candidate', error.message);
   }
 }
 

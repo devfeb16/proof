@@ -104,6 +104,28 @@ function formatCandidate(candidate) {
   };
 }
 
+function buildCandidateDetail(candidate) {
+  if (!candidate) return [];
+  const person = candidate?.person || {};
+  const emailEntry = Array.isArray(person?.emails)
+    ? person.emails.find((item) => item?.value)
+    : null;
+  const phoneEntry = Array.isArray(person?.phones)
+    ? person.phones.find((item) => item?.value)
+    : null;
+
+  return [
+    { label: 'Candidate ID', value: candidate?.id || person?.id || '—' },
+    { label: 'Name', value: person?.name || candidate?.name || '—' },
+    { label: 'Stage', value: candidate?.workflow_stage_name || candidate?.workflow_stage_id || '—' },
+    { label: 'Job ID', value: candidate?.jobId || candidate?.job_id || '—' },
+    { label: 'Job title', value: candidate?.jobTitle || candidate?.jobPublishedName || '—' },
+    { label: 'Email', value: emailEntry?.value || candidate?.email || '—' },
+    { label: 'Phone', value: phoneEntry?.value || '—' },
+    { label: 'Updated', value: candidate?.updated_at || candidate?.updatedAt || '—' },
+  ];
+}
+
 const initialJobDetailState = () => ({
   loading: false,
   error: '',
@@ -124,6 +146,12 @@ const initialPreQualifiedState = () => ({
   rows: [],
 });
 
+const initialCandidateDetailState = () => ({
+  loading: false,
+  error: '',
+  data: null,
+});
+
 export default function LoxoPanel() {
   const [jobsState, setJobsState] = useState({
     loading: false,
@@ -131,10 +159,13 @@ export default function LoxoPanel() {
     items: [],
   });
   const [selectedJobId, setSelectedJobId] = useState('');
+  const [jobIdInput, setJobIdInput] = useState('');
+  const [candidateIdInput, setCandidateIdInput] = useState('');
   const [jobDetail, setJobDetail] = useState(initialJobDetailState());
   const [allCandidates, setAllCandidates] = useState(initialListState());
   const [selectedStageCandidates, setSelectedStageCandidates] = useState(initialListState());
   const [preQualified, setPreQualified] = useState(initialPreQualifiedState());
+  const [candidateDetail, setCandidateDetail] = useState(initialCandidateDetailState());
   const [testStatus, setTestStatus] = useState({
     loading: false,
     error: '',
@@ -145,6 +176,7 @@ export default function LoxoPanel() {
     setJobDetail(initialJobDetailState());
     setAllCandidates(initialListState());
     setSelectedStageCandidates(initialListState());
+    setCandidateDetail(initialCandidateDetailState());
   }, []);
 
   const handleFetchJobs = useCallback(async () => {
@@ -156,9 +188,12 @@ export default function LoxoPanel() {
       if (results.length > 0) {
         const firstId = extractJobId(results[0]);
         setSelectedJobId(firstId);
+        setJobIdInput(firstId);
       } else {
         setSelectedJobId('');
+        setJobIdInput('');
       }
+      setCandidateIdInput('');
       resetJobScopedData();
     } catch (error) {
       setJobsState({
@@ -167,6 +202,8 @@ export default function LoxoPanel() {
         items: [],
       });
       setSelectedJobId('');
+      setJobIdInput('');
+      setCandidateIdInput('');
       resetJobScopedData();
     }
   }, [resetJobScopedData]);
@@ -174,6 +211,8 @@ export default function LoxoPanel() {
   const handleSelectJob = useCallback(
     (jobId) => {
       setSelectedJobId(jobId);
+      setJobIdInput(jobId);
+      setCandidateIdInput('');
       resetJobScopedData();
     },
     [resetJobScopedData]
@@ -185,6 +224,17 @@ export default function LoxoPanel() {
     },
     [handleSelectJob]
   );
+
+  const handleJobIdInputChange = useCallback((event) => {
+    setJobIdInput(event.target.value);
+  }, []);
+
+  const handleApplyJobId = useCallback(() => {
+    const trimmed = jobIdInput.trim();
+    setSelectedJobId(trimmed);
+    setCandidateIdInput('');
+    resetJobScopedData();
+  }, [jobIdInput, resetJobScopedData]);
 
   const handleFetchJobDetail = useCallback(async () => {
     if (!selectedJobId) {
@@ -207,6 +257,46 @@ export default function LoxoPanel() {
       });
     }
   }, [selectedJobId]);
+
+  const handleCandidateIdInputChange = useCallback((event) => {
+    setCandidateIdInput(event.target.value);
+  }, []);
+
+  const handleFetchCandidateDetail = useCallback(async () => {
+    const trimmedJobId = (selectedJobId || jobIdInput).trim();
+    const trimmedCandidateId = candidateIdInput.trim();
+
+    if (!trimmedJobId) {
+      setCandidateDetail({
+        loading: false,
+        error: 'Enter a job ID before fetching a candidate.',
+        data: null,
+      });
+      return;
+    }
+
+    if (!trimmedCandidateId) {
+      setCandidateDetail({
+        loading: false,
+        error: 'Enter a candidate ID to fetch.',
+        data: null,
+      });
+      return;
+    }
+
+    setCandidateDetail({ loading: true, error: '', data: null });
+
+    try {
+      const detail = await apiFetch(`/jobs/${trimmedJobId}/candidates/${trimmedCandidateId}`);
+      setCandidateDetail({ loading: false, error: '', data: detail });
+    } catch (error) {
+      setCandidateDetail({
+        loading: false,
+        error: error.message || 'Failed to fetch candidate',
+        data: null,
+      });
+    }
+  }, [candidateIdInput, jobIdInput, selectedJobId]);
 
   const handleFetchAllCandidates = useCallback(async () => {
     if (!selectedJobId) {
@@ -305,6 +395,10 @@ export default function LoxoPanel() {
   }, []);
 
   const jobSummary = useMemo(() => buildJobSummary(jobDetail.data), [jobDetail.data]);
+  const candidateSummary = useMemo(
+    () => buildCandidateDetail(candidateDetail.data),
+    [candidateDetail.data]
+  );
   const jobsTableRows = useMemo(
     () => jobsState.items.map((job) => formatJob(job)),
     [jobsState.items]
@@ -315,7 +409,11 @@ export default function LoxoPanel() {
     [jobsState.items, selectedJobId]
   );
 
-  const activeJobTitle = activeJob ? formatJob(activeJob).title : 'No job selected';
+  const activeJobTitle = activeJob
+    ? formatJob(activeJob).title
+    : selectedJobId || jobIdInput
+    ? `Job ${selectedJobId || jobIdInput}`
+    : 'No job selected';
 
   return (
     <section className="loxo-panel" aria-label="Loxo integration overview">
@@ -402,22 +500,43 @@ export default function LoxoPanel() {
                   </tbody>
                 </table>
               </div>
-              <div className="loxo-panel__inline loxo-panel__inline--gap">
-                <label htmlFor="loxo-job-select" className="loxo-panel__label">
-                  Active job
-                </label>
-                <select
-                  id="loxo-job-select"
-                  className="loxo-panel__select"
-                  value={selectedJobId}
-                  onChange={handleSelectJobFromEvent}
-                >
-                  {jobsTableRows.map((job) => (
-                    <option key={job.id || job.title} value={job.id}>
-                      {job.title}
-                    </option>
-                  ))}
-                </select>
+              <div className="loxo-panel__grid-inline">
+                <div className="loxo-panel__inline loxo-panel__inline--gap">
+                  <label htmlFor="loxo-job-select" className="loxo-panel__label">
+                    Select job
+                  </label>
+                  <select
+                    id="loxo-job-select"
+                    className="loxo-panel__select"
+                    value={selectedJobId}
+                    onChange={handleSelectJobFromEvent}
+                  >
+                    {jobsTableRows.map((job) => (
+                      <option key={job.id || job.title} value={job.id}>
+                        {job.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="loxo-panel__inline loxo-panel__inline--gap">
+                  <label htmlFor="loxo-job-id-input" className="loxo-panel__label">
+                    Enter job ID
+                  </label>
+                  <input
+                    id="loxo-job-id-input"
+                    className="loxo-panel__input"
+                    value={jobIdInput}
+                    onChange={handleJobIdInputChange}
+                    placeholder="e.g. 123456"
+                  />
+                  <button
+                    type="button"
+                    className="loxo-panel__button loxo-panel__button--ghost"
+                    onClick={handleApplyJobId}
+                  >
+                    Apply
+                  </button>
+                </div>
               </div>
             </>
           )}
@@ -552,6 +671,61 @@ export default function LoxoPanel() {
                       <td>{candidate.name}</td>
                       <td>{candidate.stage}</td>
                       <td>{candidate.email}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </article>
+
+        <article className="loxo-panel__card">
+          <header>
+            <div>
+              <h3>Candidate detail</h3>
+              <p className="loxo-panel__muted">
+                Provide a candidate ID to fetch a single applicant for the active job.
+              </p>
+            </div>
+            <button
+              className="loxo-panel__button"
+              type="button"
+              onClick={handleFetchCandidateDetail}
+              disabled={candidateDetail.loading}
+            >
+              {candidateDetail.loading ? 'Fetching…' : 'Fetch candidate'}
+            </button>
+          </header>
+          <div className="loxo-panel__inline loxo-panel__inline--gap">
+            <label htmlFor="loxo-candidate-id-input" className="loxo-panel__label">
+              Candidate ID
+            </label>
+            <input
+              id="loxo-candidate-id-input"
+              className="loxo-panel__input"
+              value={candidateIdInput}
+              onChange={handleCandidateIdInputChange}
+              placeholder="e.g. 987654"
+            />
+          </div>
+          <p className="loxo-panel__muted">
+            Using job ID: {selectedJobId || jobIdInput || 'Not set'}
+          </p>
+          {candidateDetail.error && (
+            <p className="loxo-panel__status loxo-panel__status--error">{candidateDetail.error}</p>
+          )}
+          {!candidateDetail.loading && !candidateDetail.error && !candidateDetail.data && (
+            <p className="loxo-panel__muted">Enter the IDs above and run the fetch.</p>
+          )}
+          {candidateDetail.loading && <p className="loxo-panel__muted">Loading candidate…</p>}
+          {candidateSummary.length > 0 && (
+            <div className="loxo-panel__table-wrapper loxo-panel__table-wrapper--compact">
+              <table className="loxo-panel__table loxo-panel__table--meta">
+                <tbody>
+                  {candidateSummary.map((item) => (
+                    <tr key={item.label}>
+                      <th scope="row">{item.label}</th>
+                      <td>{item.value || '—'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -854,6 +1028,25 @@ export default function LoxoPanel() {
 
         .loxo-panel__inline--gap {
           gap: 0.75rem;
+        }
+
+        .loxo-panel__grid-inline {
+          display: grid;
+          gap: 0.75rem;
+        }
+
+        .loxo-panel__input {
+          width: min(260px, 100%);
+          padding: 0.5rem 0.65rem;
+          border-radius: 0.75rem;
+          border: 1px solid rgba(148, 163, 184, 0.6);
+          background: #ffffff;
+          color: #0f172a;
+        }
+
+        .loxo-panel__input:focus {
+          outline: 2px solid rgba(37, 99, 235, 0.35);
+          outline-offset: 1px;
         }
 
         @media (max-width: 720px) {

@@ -74,6 +74,18 @@ export async function fetchCandidatesByJob(jobId) {
   }
 }
 
+export async function fetchCandidateById(jobId, candidateId) {
+  try {
+    return await loxoClient.get(`/jobs/${jobId}/candidates/${candidateId}`);
+  } catch (error) {
+    console.error(
+      `❌ Error fetching candidate ${candidateId} for job ${jobId}:`,
+      error.message || error
+    );
+    throw new Error(`Failed to fetch candidate ${candidateId} for job ID ${jobId}`);
+  }
+}
+
 export async function fetchAllWorkflowStages() {
   try {
     const data = await loxoClient.get('/workflow_stages');

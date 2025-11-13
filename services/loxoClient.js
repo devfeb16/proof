@@ -1,9 +1,25 @@
+import dotenv from 'dotenv';
+
 const DEFAULT_BASE_DOMAIN = 'app.loxo.co';
 
+if (!process.env.LOXO_API_KEY || !process.env.LOXO_SLUG) {
+  dotenv.config({ path: '.env.local' });
+  dotenv.config();
+}
+
 function getLoxoConfig() {
-  const apiKey = process.env.LOXO_API_KEY;
-  const slug = process.env.LOXO_SLUG;
-  const domain = process.env.LOXO_DOMAIN || DEFAULT_BASE_DOMAIN;
+  const apiKey =
+    process.env.LOXO_API_KEY ||
+    process.env.NEXT_PUBLIC_LOXO_API_KEY ||
+    '';
+  const slug =
+    process.env.LOXO_SLUG ||
+    process.env.NEXT_PUBLIC_LOXO_SLUG ||
+    '';
+  const domain =
+    process.env.LOXO_DOMAIN ||
+    process.env.NEXT_PUBLIC_LOXO_DOMAIN ||
+    DEFAULT_BASE_DOMAIN;
 
   if (!apiKey) {
     throw new Error('Missing Loxo config: LOXO_API_KEY must be defined');
@@ -79,6 +95,12 @@ export const loxoClient = {
   },
   post(path, options) {
     return request('POST', path, options);
+  },
+  put(path, options) {
+    return request('PUT', path, options);
+  },
+  delete(path, options) {
+    return request('DELETE', path, options);
   },
 };
 
