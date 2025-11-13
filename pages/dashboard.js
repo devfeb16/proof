@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import DashboardLayout from '../components/DashboardLayout';
 import SettingsPanel from '../components/dashboard/SettingsPanel';
@@ -326,6 +326,80 @@ export default function Dashboard({ user }) {
   const initialSection = useMemo(() => primaryNav[0]?.key || FALLBACK_NAV[0].key, [primaryNav]);
   const [activeSection, setActiveSection] = useState(initialSection);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const hasBootstrappedRef = useRef(false);
+
+  const resolveSectionKey = useCallback(
+    (key) => {
+      if (!key) return null;
+      const sanitized = `${key}`.trim();
+      if (!sanitized) return null;
+      const normalized = sanitized.toLowerCase();
+      if (normalized === 'settings') {
+        return 'settings';
+      }
+      const match = primaryNav.find((item) => item.key.toLowerCase() === normalized);
+      return match?.key || null;
+    },
+    [primaryNav]
+  );
+
+  const sectionParam = router.query?.section;
+
+  useEffect(() => {
+    if (!router.isReady) return;
+    if (typeof sectionParam !== 'string') return;
+    const resolvedKey = resolveSectionKey(sectionParam);
+    if (!resolvedKey) return;
+    setActiveSection((prev) => (prev === resolvedKey ? prev : resolvedKey));
+  }, [router.isReady, sectionParam, resolveSectionKey]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    const applyHashToState = () => {
+      let hashValue = window.location.hash.replace(/^#/, '');
+      try {
+        hashValue = decodeURIComponent(hashValue);
+      } catch {
+        // ignore decode errors and fall back to raw hash
+      }
+      const resolvedKey = resolveSectionKey(hashValue);
+      if (!resolvedKey) return;
+      setActiveSection((prev) => (prev === resolvedKey ? prev : resolvedKey));
+    };
+
+    applyHashToState();
+    hasBootstrappedRef.current = true;
+    window.addEventListener('hashchange', applyHashToState);
+    return () => {
+      window.removeEventListener('hashchange', applyHashToState);
+    };
+  }, [resolveSectionKey]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!activeSection) return;
+
+    let hashValue = window.location.hash.replace(/^#/, '');
+    try {
+      hashValue = decodeURIComponent(hashValue);
+    } catch {
+      // ignore decode errors and fall back to raw hash
+    }
+
+    if (!hasBootstrappedRef.current) {
+      return;
+    }
+
+    const basePath = `${window.location.pathname}${window.location.search}`;
+    const nextUrl = `${basePath}#${activeSection}`;
+    const currentUrl = hashValue ? `${basePath}#${hashValue}` : basePath;
+
+    if (currentUrl !== nextUrl) {
+      window.history.replaceState(null, '', nextUrl);
+    }
+  }, [activeSection]);
+
   const isOverviewSection = activeSection === 'overview' && normalizedRole !== 'base_user';
 
   useEffect(() => {
