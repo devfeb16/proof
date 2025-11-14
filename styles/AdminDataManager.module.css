@@ -53,6 +53,10 @@
   padding: 0;
 }
 
+.toolbar .secondaryButton {
+  padding: 0.5rem 1.1rem;
+}
+
 .feedback {
   margin: 0;
   border-radius: 0.9rem;
@@ -102,9 +106,24 @@
 
 .formGrid {
   display: grid;
-  gap: 0.75rem;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   min-width: 0;
+}
+
+.dateFieldsGroup {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(200px, 300px));
+  min-width: 0;
+  grid-column: 1 / -1;
+  align-items: start;
+}
+
+.dateFieldsGroup .formField {
+  min-width: 0;
+  max-width: 300px;
+  width: 100%;
 }
 
 .formField {
@@ -124,6 +143,8 @@
 .formField input,
 .formField select,
 .formField textarea {
+  width: 100%;
+  max-width: 100%;
   border-radius: 0.75rem;
   border: 1.5px solid rgba(148, 163, 184, 0.4);
   padding: 0.75rem 1rem;
@@ -132,6 +153,20 @@
   background: #ffffff;
   transition: all 0.2s ease;
   font-family: inherit;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.formField input[type="datetime-local"] {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+}
+
+.dateFieldsGroup .formField input[type="datetime-local"] {
+  max-width: 280px;
+  width: 100%;
+  min-width: 200px;
 }
 
 .formField input::placeholder,
@@ -437,8 +472,17 @@
   }
 
   .formGrid {
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 1rem;
+  }
+
+  .dateFieldsGroup {
+    grid-template-columns: repeat(2, minmax(200px, 280px));
+    gap: 1rem;
+  }
+
+  .dateFieldsGroup .formField {
+    max-width: 280px;
   }
 
   .form {
@@ -478,6 +522,16 @@
   .formGrid {
     grid-template-columns: 1fr;
     gap: 1rem;
+  }
+
+  .dateFieldsGroup {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    justify-content: stretch;
+  }
+
+  .dateFieldsGroup .formField {
+    max-width: 100%;
   }
 
   .formField input,

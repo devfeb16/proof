@@ -444,25 +444,27 @@ export default function JobManager({ user }) {
               />
             </label>
 
-            <label className={styles.formField}>
-              <span>Window Start</span>
-              <input
-                type="datetime-local"
-                name="window_start"
-                value={formState.window_start}
-                onChange={handleInputChange}
-              />
-            </label>
+            <div className={styles.dateFieldsGroup}>
+              <label className={styles.formField}>
+                <span>Window Start</span>
+                <input
+                  type="datetime-local"
+                  name="window_start"
+                  value={formState.window_start}
+                  onChange={handleInputChange}
+                />
+              </label>
 
-            <label className={styles.formField}>
-              <span>Window End</span>
-              <input
-                type="datetime-local"
-                name="window_end"
-                value={formState.window_end}
-                onChange={handleInputChange}
-              />
-            </label>
+              <label className={styles.formField}>
+                <span>Window End</span>
+                <input
+                  type="datetime-local"
+                  name="window_end"
+                  value={formState.window_end}
+                  onChange={handleInputChange}
+                />
+              </label>
+            </div>
 
             <label className={styles.formField}>
               <span>Address Street</span>
