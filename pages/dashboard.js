@@ -9,6 +9,7 @@ import TranscriptManager from '../components/dashboard/TranscriptManager';
 import VendorManager from '../components/dashboard/VendorManager';
 import PerformanceDashboard from '../components/dashboard/reports/PerformanceDashboard';
 import LoxoPanel from '../components/dashboard/LoxoPanel';
+import CityServiceManager from '../components/dashboard/CityServiceManager';
 
 export async function getServerSideProps(context) {
   const { req } = context;
@@ -43,6 +44,7 @@ const NAVIGATION_BY_ROLE = {
     { key: 'loxo', label: 'Loxo' },
     { key: 'transcripts', label: 'Transcripts' },
     { key: 'vendors', label: 'Vendors' },
+    { key: 'city-service-routes', label: 'City Service Routes' },
     { key: 'funding', label: 'Funding Opportunities' },
     { key: 'add-origin', label: 'Add Origin' },
     { key: 'reports', label: 'Reports & Analytics' },
@@ -53,6 +55,7 @@ const NAVIGATION_BY_ROLE = {
     { key: 'loxo', label: 'Loxo' },
     { key: 'transcripts', label: 'Transcripts' },
     { key: 'vendors', label: 'Vendors' },
+    { key: 'city-service-routes', label: 'City Service Routes' },
     { key: 'funding', label: 'Funding Opportunities' },
     { key: 'submissions', label: 'Submissions' },
     { key: 'team', label: 'Team Insights' },
@@ -64,6 +67,7 @@ const NAVIGATION_BY_ROLE = {
     { key: 'loxo', label: 'Loxo' },
     { key: 'transcripts', label: 'Transcripts' },
     { key: 'vendors', label: 'Vendors' },
+    { key: 'city-service-routes', label: 'City Service Routes' },
     { key: 'add-origin', label: 'Add Origin' },
     { key: 'reports', label: 'Reports & Analytics' },
   ],
@@ -73,6 +77,7 @@ const NAVIGATION_BY_ROLE = {
     { key: 'loxo', label: 'Loxo' },
     { key: 'transcripts', label: 'Transcripts' },
     { key: 'vendors', label: 'Vendors' },
+    { key: 'city-service-routes', label: 'City Service Routes' },
     { key: 'add-origin', label: 'Add Origin' },
     { key: 'reports', label: 'Reports & Analytics' },
   ],
@@ -120,6 +125,11 @@ const SECTION_DESCRIPTORS = {
     subtitle: 'Monitor vendor compliance status and documentation.',
     hideHeader: true,
     body: (user) => <VendorManager user={user} />,
+  },
+  'city-service-routes': {
+    subtitle: 'Manage dynamic city + service URL routes. Test and configure location-based routing.',
+    hideHeader: true,
+    body: (user) => <CityServiceManager user={user} />,
   },
   applications: {
     hideHeader: true,
