@@ -198,7 +198,7 @@ export default function ScraperManager({ user }) {
       <form className={styles.form} onSubmit={handleScrape}>
         <h3 className={styles.formTitle}>Scrape Website</h3>
         <div className={styles.formGrid}>
-          <label className={styles.formField} style={{ gridColumn: '1 / -1' }}>
+          <label className={`${styles.formField} ${styles.formFieldFullWidth}`}>
             <span>Website URL *</span>
             <input
               type="url"

@@ -132,9 +132,31 @@ check_health() {
     log "Checking application health at ${HEALTH_CHECK_URL}..."
     
     while [ $retries -lt $max_retries ]; do
-        if curl -f -s -m ${HEALTH_CHECK_TIMEOUT} "${HEALTH_CHECK_URL}" > /dev/null 2>&1; then
-            log "Health check passed!"
-            return 0
+        # Check if PM2 process is running
+        if ! pm2 describe "${PM2_PROCESS}" > /dev/null 2>&1; then
+            warn "PM2 process ${PM2_PROCESS} is not running"
+            retries=$((retries + 1))
+            if [ $retries -lt $max_retries ]; then
+                warn "Retrying in 5 seconds..."
+                sleep 5
+            fi
+            continue
+        fi
+        
+        # Check HTTP health endpoint
+        local response=$(curl -f -s -m ${HEALTH_CHECK_TIMEOUT} "${HEALTH_CHECK_URL}" 2>&1)
+        local curl_exit=$?
+        
+        if [ $curl_exit -eq 0 ]; then
+            # Check if response contains success field
+            if echo "$response" | grep -q '"success"'; then
+                log "Health check passed!"
+                return 0
+            else
+                warn "Health check returned unexpected response"
+            fi
+        else
+            warn "Health check HTTP request failed (curl exit code: $curl_exit)"
         fi
         
         retries=$((retries + 1))
@@ -145,6 +167,9 @@ check_health() {
     done
     
     error "Health check failed after ${max_retries} attempts"
+    # Log PM2 status for debugging
+    log "PM2 process status:"
+    pm2 describe "${PM2_PROCESS}" || true
     return 1
 }
 
@@ -254,7 +279,7 @@ main() {
     
     # Wait for application to start
     log "Waiting for application to start..."
-    sleep 10
+    sleep 15
     
     # Perform health check
     if ! check_health; then
