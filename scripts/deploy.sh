@@ -143,20 +143,42 @@ check_health() {
             continue
         fi
         
-        # Check HTTP health endpoint
-        local response=$(curl -f -s -m ${HEALTH_CHECK_TIMEOUT} "${HEALTH_CHECK_URL}" 2>&1)
+        # Check HTTP health endpoint (don't use -f flag to capture response even on errors)
+        local http_code=$(curl -s -o /tmp/health_check_response.txt -w "%{http_code}" -m ${HEALTH_CHECK_TIMEOUT} "${HEALTH_CHECK_URL}" 2>&1)
         local curl_exit=$?
+        local response=$(cat /tmp/health_check_response.txt 2>/dev/null || echo "")
         
-        if [ $curl_exit -eq 0 ]; then
-            # Check if response contains success field
+        # Check if curl succeeded and got HTTP 200
+        if [ $curl_exit -eq 0 ] && [ "$http_code" = "200" ]; then
+            # Check if response contains success field (JSON response)
             if echo "$response" | grep -q '"success"'; then
-                log "Health check passed!"
-                return 0
+                # Check if success is true
+                if echo "$response" | grep -q '"success"\s*:\s*true'; then
+                    log "Health check passed! (HTTP $http_code)"
+                    rm -f /tmp/health_check_response.txt
+                    return 0
+                else
+                    warn "Health check returned success=false in response"
+                    warn "Response preview: $(echo "$response" | head -c 200)"
+                fi
             else
-                warn "Health check returned unexpected response"
+                # If not JSON, check if it's at least a valid HTTP 200 response
+                if [ -n "$response" ]; then
+                    warn "Health check returned non-JSON response (HTTP $http_code)"
+                    warn "Response preview: $(echo "$response" | head -c 200)"
+                else
+                    warn "Health check returned empty response (HTTP $http_code)"
+                fi
             fi
         else
-            warn "Health check HTTP request failed (curl exit code: $curl_exit)"
+            if [ $curl_exit -ne 0 ]; then
+                warn "Health check HTTP request failed (curl exit code: $curl_exit, HTTP code: $http_code)"
+            else
+                warn "Health check returned non-200 status (HTTP $http_code)"
+                if [ -n "$response" ]; then
+                    warn "Response preview: $(echo "$response" | head -c 200)"
+                fi
+            fi
         fi
         
         retries=$((retries + 1))
@@ -170,6 +192,7 @@ check_health() {
     # Log PM2 status for debugging
     log "PM2 process status:"
     pm2 describe "${PM2_PROCESS}" || true
+    rm -f /tmp/health_check_response.txt
     return 1
 }
 
@@ -286,8 +309,17 @@ main() {
         error "Health check failed after deployment!"
         if [ -n "$current_backup" ]; then
             log "Attempting to rollback to previous version..."
-            rollback "$current_backup"
-            exit 1
+            if rollback "$current_backup"; then
+                log "Rollback successful! Previous version is now running."
+                log "Deployment was not applied due to health check failure."
+                log "Previous commit remains active: ${current_commit}"
+                # Exit with 0 (success) since rollback was successful
+                # The previous version is running, which is what we want
+                exit 0
+            else
+                error "Rollback failed! Manual intervention required."
+                exit 1
+            fi
         else
             error "No backup available for rollback. Manual intervention required."
             exit 1
