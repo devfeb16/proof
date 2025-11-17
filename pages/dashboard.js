@@ -12,6 +12,7 @@ import PerformanceDashboard from '../components/dashboard/reports/PerformanceDas
 import LoxoPanel from '../components/dashboard/LoxoPanel';
 import CityServiceManager from '../components/dashboard/CityServiceManager';
 import ApiEndpointsPanel from '../components/dashboard/ApiEndpointsPanel';
+import ScraperManager from '../components/dashboard/ScraperManager';
 
 export async function getServerSideProps(context) {
   const { req } = context;
@@ -49,6 +50,7 @@ const NAVIGATION_BY_ROLE = {
     { key: 'vendors', label: 'Vendors' },
     { key: 'city-service-routes', label: 'City Service Routes' },
     { key: 'funding', label: 'Funding Opportunities' },
+    { key: 'scraper', label: 'Web Scraper' },
     { key: 'add-origin', label: 'Add Origin' },
     { key: 'reports', label: 'Reports & Analytics' },
     { key: 'api-endpoints', label: 'API Endpoints' },
@@ -62,6 +64,7 @@ const NAVIGATION_BY_ROLE = {
     { key: 'vendors', label: 'Vendors' },
     { key: 'city-service-routes', label: 'City Service Routes' },
     { key: 'funding', label: 'Funding Opportunities' },
+    { key: 'scraper', label: 'Web Scraper' },
     { key: 'submissions', label: 'Submissions' },
     { key: 'team', label: 'Team Insights' },
     { key: 'add-origin', label: 'Add Origin' },
@@ -75,6 +78,7 @@ const NAVIGATION_BY_ROLE = {
     { key: 'transcripts', label: 'Transcripts' },
     { key: 'vendors', label: 'Vendors' },
     { key: 'city-service-routes', label: 'City Service Routes' },
+    { key: 'scraper', label: 'Web Scraper' },
     { key: 'add-origin', label: 'Add Origin' },
     { key: 'reports', label: 'Reports & Analytics' },
     { key: 'api-endpoints', label: 'API Endpoints' },
@@ -87,6 +91,7 @@ const NAVIGATION_BY_ROLE = {
     { key: 'transcripts', label: 'Transcripts' },
     { key: 'vendors', label: 'Vendors' },
     { key: 'city-service-routes', label: 'City Service Routes' },
+    { key: 'scraper', label: 'Web Scraper' },
     { key: 'add-origin', label: 'Add Origin' },
     { key: 'reports', label: 'Reports & Analytics' },
     { key: 'api-endpoints', label: 'API Endpoints' },
@@ -298,6 +303,11 @@ const SECTION_DESCRIPTORS = {
   'api-endpoints': {
     hideHeader: true,
     body: () => <ApiEndpointsPanel />,
+  },
+  scraper: {
+    subtitle: 'Scrape websites and extract structured data. Save important information for future reference.',
+    hideHeader: true,
+    body: (user) => <ScraperManager user={user} />,
   },
   submissions: {
     subtitle: 'Oversee incoming submissions and coordinate reviews.',

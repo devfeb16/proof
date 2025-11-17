@@ -12,7 +12,9 @@
   "dependencies": {
     "ag-grid-community": "^34.3.1",
     "ag-grid-react": "^34.3.1",
+    "axios": "^1.13.2",
     "bcryptjs": "^2.4.3",
+    "cheerio": "^1.1.2",
     "cookie": "^0.6.0",
     "dotenv": "^16.4.5",
     "jsonwebtoken": "^9.0.2",
