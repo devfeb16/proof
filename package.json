@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "build:analyze": "ANALYZE=true next build",
-    "start": "bash scripts/start-server.sh",
+    "start": "next start -H 0.0.0.0 -p 8000",
     "postinstall": "echo 'Dependencies installed successfully'"
   },
   "dependencies": {

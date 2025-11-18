@@ -11,10 +11,7 @@ module.exports = {
       max_memory_restart: '500M',
       env: {
         NODE_ENV: 'production',
-        PORT: 8000,
-        HOSTNAME: '0.0.0.0', // Bind to all interfaces for external access
       },
-      // PM2 env variables override .env file values
       error_file: '/root/.pm2/logs/proof-server-error.log',
       out_file: '/root/.pm2/logs/proof-server-out.log',
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
