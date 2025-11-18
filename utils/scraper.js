@@ -143,18 +143,62 @@ export async function scrapeWebsite(url) {
       };
     }
 
+    // Extract domain information
+    let domainInfo = {};
+    try {
+      const urlObj = new URL(normalizedUrl);
+      domainInfo = {
+        domain: urlObj.hostname,
+        protocol: urlObj.protocol.replace(':', ''),
+        path: urlObj.pathname,
+        host: urlObj.host,
+        origin: urlObj.origin,
+      };
+    } catch (e) {
+      // Invalid URL, skip domain info
+    }
+
     // Extract structured data with safe fallbacks
+    const metadata = extractMetadata($) || {};
+    const headings = extractHeadings($) || { h1: [], h2: [], h3: [], h4: [], h5: [], h6: [] };
+    const links = extractLinks($, normalizedUrl) || [];
+    const images = extractImages($, normalizedUrl) || [];
+    const text = extractMainText($) || '';
+    const structuredData = extractStructuredData($) || [];
+
+    // Calculate statistics
+    const stats = {
+      totalHeadings: Object.values(headings).reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0),
+      totalLinks: links.length,
+      totalImages: images.length,
+      totalKeywords: extractKeywords($).length,
+      textLength: text.length,
+      hasTitle: !!extractTitle($),
+      hasDescription: !!extractDescription($),
+      hasKeywords: extractKeywords($).length > 0,
+      hasOpenGraph: Object.keys(metadata).some(key => key.startsWith('og:')),
+      hasTwitterCard: Object.keys(metadata).some(key => key.startsWith('twitter:')),
+      hasStructuredData: structuredData.length > 0,
+      hasCanonical: !!metadata.canonical,
+      hasRobots: !!metadata.robots,
+      hasLanguage: !!metadata.language,
+      hasCharset: !!metadata.charset,
+      hasViewport: !!metadata.viewport,
+    };
+
     const scrapedData = {
       url: normalizedUrl,
+      domainInfo,
       title: extractTitle($) || '',
       description: extractDescription($) || '',
       keywords: extractKeywords($) || [],
-      headings: extractHeadings($) || { h1: [], h2: [], h3: [], h4: [], h5: [], h6: [] },
-      links: extractLinks($, normalizedUrl) || [],
-      images: extractImages($, normalizedUrl) || [],
-      text: extractMainText($) || '',
-      metadata: extractMetadata($) || {},
-      structuredData: extractStructuredData($) || [],
+      headings,
+      links,
+      images,
+      text,
+      metadata,
+      structuredData,
+      stats,
       scrapedAt: new Date().toISOString(),
     };
 
@@ -343,6 +387,27 @@ function extractMetadata($) {
   const metadata = {};
 
   try {
+    // Language
+    const lang = $('html').attr('lang') || $('html').attr('xml:lang') || '';
+    if (lang) metadata.language = lang;
+
+    // Charset
+    const charset = $('meta[charset]').attr('charset') || 
+                   $('meta[http-equiv="Content-Type"]').attr('content')?.match(/charset=([^;]+)/)?.[1] || '';
+    if (charset) metadata.charset = charset;
+
+    // Viewport
+    const viewport = $('meta[name="viewport"]').attr('content') || '';
+    if (viewport) metadata.viewport = viewport;
+
+    // Canonical URL
+    const canonical = $('link[rel="canonical"]').attr('href') || '';
+    if (canonical) metadata.canonical = canonical;
+
+    // Robots
+    const robots = $('meta[name="robots"]').attr('content') || '';
+    if (robots) metadata.robots = robots;
+
     // Open Graph tags
     $('meta[property^="og:"]').each((_, element) => {
       if (!element) return;
@@ -371,6 +436,14 @@ function extractMetadata($) {
     if (author) {
       metadata.author = author;
     }
+
+    // Generator
+    const generator = $('meta[name="generator"]').attr('content') || '';
+    if (generator) metadata.generator = generator;
+
+    // Theme Color
+    const themeColor = $('meta[name="theme-color"]').attr('content') || '';
+    if (themeColor) metadata.themeColor = themeColor;
   } catch (error) {
     console.warn('Error extracting metadata:', error.message);
   }
