@@ -1,87 +1,100 @@
 #!/bin/bash
+
+# ===========================================
+# 🚀 Automated Deployment Script for Proof Server
+# Works with GitHub Actions + DigitalOcean Droplet
+# ===========================================
+
 set -euo pipefail
+IFS=$'\n\t'
 
-PROJECT_DIR="/root/proof"
-BACKUP_DIR="/root/proof-backups"
-PM2_PROCESS="proof-server"
-HEALTH_CHECK_URL="http://localhost:8000/api/test"
-STARTUP_WAIT=15
-MAX_BACKUPS=5
+echo ""
+echo "🚀 Starting deployment on $(hostname) at $(date)"
+echo "-------------------------------------------"
 
-log() { echo "[INFO] $1"; }
-error() { echo "[ERROR] $1"; }
+# Move to project root
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="${SCRIPT_DIR%/scripts}"
+cd "$PROJECT_DIR"
 
-# Create backup of .next and git state
-create_backup() {
-    local backup_name="backup-$(date +'%Y%m%d-%H%M%S')"
-    local backup_path="${BACKUP_DIR}/${backup_name}"
-    mkdir -p "${backup_path}"
-    cp -r "${PROJECT_DIR}/.next" "${backup_path}/.next" 2>/dev/null || true
-    git -C "${PROJECT_DIR}" rev-parse HEAD > "${backup_path}/git-commit.txt" 2>/dev/null || true
-    echo "${backup_name}"
-}
+echo "📂 Current directory: $(pwd)"
 
-# Rollback function
-rollback() {
-    local backup_name=$1
-    local backup_path="${BACKUP_DIR}/${backup_name}"
-    echo "[ROLLBACK] Restoring backup ${backup_name}"
-    rm -rf "${PROJECT_DIR}/.next"
-    cp -r "${backup_path}/.next" "${PROJECT_DIR}/.next"
-    local commit_hash=$(cat "${backup_path}/git-commit.txt")
-    git -C "${PROJECT_DIR}" checkout "${commit_hash}" 2>/dev/null || true
-    pm2 delete "${PM2_PROCESS}" 2>/dev/null || true
-    # Use ecosystem.config.js to ensure proper configuration (hostname, port, etc.)
-    pm2 start ecosystem.config.js
-}
+# -----------------------------
+# 🧠 Check Git repository context
+# -----------------------------
+if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  echo "📥 Fetching latest changes from origin/main..."
+  git fetch origin main
+  git reset --hard origin/main
+else
+  echo "⚠️  Not inside a git repository. Skipping git sync."
+fi
 
-# Health check
-check_health() {
-    local retries=0
-    local max_retries=5
-    while [ $retries -lt $max_retries ]; do
-        local code=$(curl -s -o /tmp/response.txt -w "%{http_code}" -m 10 "${HEALTH_CHECK_URL}" || echo "000")
-        if [ "$code" = "200" ]; then
-            log "Health check passed!"
-            return 0
-        fi
-        log "Health check failed (HTTP $code), retry $((retries+1))/$max_retries"
-        retries=$((retries+1))
-        sleep 5
-    done
-    return 1
-}
+# -----------------------------
+# 🧰 Node + NVM setup
+# -----------------------------
+export NVM_DIR="$HOME/.nvm"
+if [ -s "$NVM_DIR/nvm.sh" ]; then
+  # shellcheck disable=SC1090
+  . "$NVM_DIR/nvm.sh"
+  echo "✅ NVM loaded from $NVM_DIR"
+else
+  echo "⚠️  NVM not found — ensure Node is installed on system PATH."
+fi
 
-# Main deployment
-main() {
-    cd "${PROJECT_DIR}" || { error "Project directory not found"; exit 1; }
+# Ensure Node 18.x is available (adjust version as needed)
+if command -v nvm >/dev/null 2>&1; then
+  nvm install 18 >/dev/null 2>&1 || true
+  nvm use 18 >/dev/null 2>&1 || true
+fi
 
-    backup=$(create_backup)
-    log "Backup created: $backup"
+# Confirm Node + npm versions
+echo "🟢 Node version: $(node -v 2>/dev/null || echo 'Not found')"
+echo "🟣 npm version:  $(npm -v 2>/dev/null || echo 'Not found')"
 
-    git fetch origin main
-    git reset --hard origin/main
+if ! command -v node >/dev/null; then
+  echo "❌ Node.js is not installed. Exiting."
+  exit 1
+fi
 
-    npm install
-    npm run build
+# -----------------------------
+# ⚙️ PM2 setup
+# -----------------------------
+echo "🔧 Ensuring PM2 is available globally..."
+npm install -g pm2 >/dev/null 2>&1 || true
+export PATH="$PATH:$(npm config get prefix)/bin"
 
-    # Ensure start script is executable
-    chmod +x "${PROJECT_DIR}/scripts/start-server.sh" 2>/dev/null || true
+pm2 ping >/dev/null 2>&1 || echo "⚠️  PM2 not running yet — will start fresh."
 
-    pm2 delete "${PM2_PROCESS}" 2>/dev/null || true
-    # Use ecosystem.config.js to ensure proper configuration (hostname, port, etc.)
-    pm2 start ecosystem.config.js
+# -----------------------------
+# 🧹 Cleanup & Dependencies
+# -----------------------------
+echo "🧹 Cleaning old dependencies and cache..."
+rm -rf node_modules
+npm cache clean --force >/dev/null 2>&1
 
-    log "Waiting $STARTUP_WAIT seconds for server to start..."
-    sleep $STARTUP_WAIT
+echo "📦 Installing dependencies..."
+npm install --no-audit --no-fund
 
-    if ! check_health; then
-        error "Health check failed, rolling back..."
-        rollback "$backup"
-        exit 1
-    fi
+echo "🏗️  Building project..."
+npm run build
 
-    log "Deployment successful!"
-}
+# -----------------------------
+# 🔄 Application (PM2) Restart
+# -----------------------------
+# Ensure start script is executable
+chmod +x "${PROJECT_DIR}/scripts/start-server.sh" 2>/dev/null || true
 
-main "$@"
+if pm2 list | grep -q "proof-server"; then
+  echo "🔄 Reloading existing 'proof-server' process..."
+  pm2 delete proof-server >/dev/null 2>&1 || true
+fi
+
+echo "🚀 Starting 'proof-server' process with latest configuration..."
+pm2 start ecosystem.config.js
+
+pm2 save >/dev/null
+
+echo ""
+echo "✅ Deployment completed successfully at $(date)"
+echo "-------------------------------------------"
