@@ -49,13 +49,26 @@ export default function SignupPage() {
         credentials: 'include', // Include cookies for session management
         body: JSON.stringify({ name: name.trim(), email: email.trim(), password }),
       });
-      const data = await res.json().catch(() => ({}));
+      
+      const text = await res.text();
+      let data = {};
+      if (text && text.trim()) {
+        try {
+          data = JSON.parse(text);
+        } catch (parseErr) {
+          // Invalid JSON response
+          throw new Error("We couldn't create your account. Please try again.");
+        }
+      }
+      
       if (!res.ok || !data.success) {
         throw new Error(formatErrorMessage(data, "We couldn't create your account. Please try again."));
       }
+      
       // Small delay to ensure cookie is set before redirect
-      await new Promise(resolve => setTimeout(resolve, 100));
-      await router.push('/dashboard');
+      await new Promise(resolve => setTimeout(resolve, 150));
+      // Use replace instead of push to avoid adding to browser history
+      await router.replace('/dashboard');
     } catch (err) {
       setError(err.message || "We couldn't create your account. Please try again.");
     } finally {

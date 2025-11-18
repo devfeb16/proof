@@ -17,11 +17,19 @@ export async function getServerSideProps(context) {
     });
     const contentType = res.headers.get('content-type') || '';
     if (res.ok && contentType.includes('application/json')) {
-      const data = await res.json();
-      const user = data?.user || data?.data?.user || null;
-      if (user) {
-        // User is authenticated, redirect to dashboard
-        return { redirect: { destination: '/dashboard', permanent: false } };
+      const text = await res.text();
+      if (text && text.trim()) {
+        try {
+          const data = JSON.parse(text);
+          const user = data?.user || data?.data?.user || null;
+          if (user) {
+            // User is authenticated, redirect to dashboard
+            return { redirect: { destination: '/dashboard', permanent: false } };
+          }
+        } catch (parseError) {
+          // Invalid JSON, continue to show home page
+          console.error('JSON parse error:', parseError);
+        }
       }
     }
   } catch (error) {

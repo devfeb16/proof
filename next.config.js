@@ -47,9 +47,12 @@ const nextConfig = {
       },
     ];
 
-    // Optimize webpack for faster builds
-    // Enable caching for faster rebuilds (production only to avoid dev issues)
-    if (!dev && !isServer) {
+    // In dev mode, disable webpack filesystem cache to prevent corruption issues
+    // Next.js handles its own caching mechanisms
+    if (dev) {
+      config.cache = false;
+    } else if (!isServer) {
+      // Production build optimizations
       config.cache = {
         type: 'filesystem',
         buildDependencies: {
@@ -61,8 +64,8 @@ const nextConfig = {
     // Ensure we don't interfere with Next.js's internal chunking
     // Next.js handles chunk splitting automatically and optimally
 
-    // Reduce infrastructure logging to suppress cache warnings
-    if (!isServer) {
+    // Reduce infrastructure logging to suppress cache warnings (production only)
+    if (!isServer && !dev) {
       config.infrastructureLogging = {
         level: 'error',
       };

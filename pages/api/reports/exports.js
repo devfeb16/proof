@@ -44,7 +44,8 @@ export default async function handler(req, res) {
         chunks.push(chunk);
       }
       const rawBody = Buffer.concat(chunks).toString('utf8') || '{}';
-      const body = JSON.parse(rawBody);
+      const trimmedBody = rawBody.trim() || '{}';
+      const body = JSON.parse(trimmedBody);
       const { optionId } = body || {};
       const option = EXPORT_OPTIONS.find((item) => item.id === optionId);
       if (!option) {

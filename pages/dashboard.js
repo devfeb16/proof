@@ -28,12 +28,20 @@ export async function getServerSideProps(context) {
     if (!res.ok || !contentType.includes('application/json')) {
       return { redirect: { destination: '/login', permanent: false } };
     }
-    const data = await res.json();
-    const user = data?.user || data?.data?.user || null;
-    if (!user) {
+    const text = await res.text();
+    if (!text || !text.trim()) {
       return { redirect: { destination: '/login', permanent: false } };
     }
-    return { props: { user } };
+    try {
+      const data = JSON.parse(text);
+      const user = data?.user || data?.data?.user || null;
+      if (!user) {
+        return { redirect: { destination: '/login', permanent: false } };
+      }
+      return { props: { user } };
+    } catch (parseError) {
+      return { redirect: { destination: '/login', permanent: false } };
+    }
   } catch {
     return { redirect: { destination: '/login', permanent: false } };
   }
