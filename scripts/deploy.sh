@@ -16,9 +16,13 @@ npm run build
 # Make start script executable
 chmod +x scripts/start-server.sh
 
-# Restart PM2
-pm2 delete proof-server 2>/dev/null || true
-pm2 start ecosystem.config.js
+# Reload PM2 with zero-downtime (or start if not running)
+if pm2 list | grep -q "proof-server"; then
+  pm2 reload proof-server --update-env
+else
+  pm2 start ecosystem.config.js
+fi
+
 pm2 save
 
 echo "Deployment completed!"
