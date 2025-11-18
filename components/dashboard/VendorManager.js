@@ -1,15 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import styles from '../../styles/AdminDataManager.module.css';
+import { useToast } from '../ToastProvider';
 
-const FULL_ACCESS_ROLES = new Set(['superadmin', 'hr_admin', 'hr']);
-const READ_ACCESS_ROLES = new Set([
-  'superadmin',
-  'hr_admin',
-  'hr',
-  'admin',
-  'base_user',
-  'simple_user',
-]);
+const FULL_ACCESS_ROLES = new Set(['superadmin', 'hr_admin', 'hr', 'admin', 'marketer', 'marketing_admin', 'simple_user']);
+const READ_ACCESS_ROLES = new Set(['superadmin', 'hr_admin', 'hr', 'admin', 'marketer', 'marketing_admin', 'simple_user']);
 
 const STATUS_OPTIONS = [
   { value: 'compliant', label: 'Compliant' },
@@ -38,11 +32,16 @@ function normalizeRole(role) {
 }
 
 function hasFullAccess(user) {
+  if (!user) return false;
   return FULL_ACCESS_ROLES.has(normalizeRole(user?.role));
 }
 
 function hasReadAccess(user) {
-  return READ_ACCESS_ROLES.has(normalizeRole(user?.role));
+  if (!user) return false;
+  const role = normalizeRole(user?.role);
+  // Exclude base_user from access
+  if (role === 'base_user') return false;
+  return hasFullAccess(user) || READ_ACCESS_ROLES.has(role);
 }
 
 function formatDateForInput(value) {
@@ -122,6 +121,7 @@ function preparePayload(formState, { isUpdate = false } = {}) {
 }
 
 export default function VendorManager({ user }) {
+  const toast = useToast();
   const canRead = useMemo(() => hasReadAccess(user), [user]);
   const canEdit = useMemo(() => hasFullAccess(user), [user]);
 
@@ -208,41 +208,29 @@ export default function VendorManager({ user }) {
   );
 
   const handleDelete = useCallback(
-    async (record) => {
+    async (complianceId) => {
       if (!canEdit) return;
-      const confirmed =
-        typeof window === 'undefined'
-          ? true
-          : window.confirm(`Delete compliance record ${record.compliance_id}?`);
-      if (!confirmed) return;
-      setIsSubmitting(true);
-      setStatusMessage('');
-      setError('');
+      if (!confirm('Are you sure you want to delete this vendor compliance record?')) return;
+
       try {
-        const response = await fetch(
-          `/api/vendors/${encodeURIComponent(record.compliance_id)}`,
-          {
-            method: 'DELETE',
-            credentials: 'include',
-          }
-        );
+        const response = await fetch(`/api/vendors/${encodeURIComponent(complianceId)}`, {
+          method: 'DELETE',
+          credentials: 'include',
+        });
         const payload = await response.json().catch(() => ({}));
         if (!response.ok || payload.success === false) {
-          const message = payload?.message || 'Failed to delete compliance record';
-          throw new Error(message);
+          throw new Error(payload?.message || 'Failed to delete vendor compliance record');
         }
-        setStatusMessage(`Deleted compliance record ${record.compliance_id}`);
+        toast.success('Vendor compliance record deleted successfully');
         await loadRecords();
-        if (editingComplianceId === record.compliance_id) {
+        if (editingComplianceId === complianceId) {
           resetForm();
         }
       } catch (err) {
-        setError(err.message || 'Unable to delete compliance record');
-      } finally {
-        setIsSubmitting(false);
+        toast.error(err.message || 'Failed to delete vendor compliance record');
       }
     },
-    [canEdit, editingComplianceId, loadRecords, resetForm]
+    [canEdit, loadRecords, editingComplianceId, resetForm, toast]
   );
 
   const handleSubmit = useCallback(
@@ -266,32 +254,46 @@ export default function VendorManager({ user }) {
         });
         const data = await response.json().catch(() => ({}));
         if (!response.ok || data.success === false) {
-          const message =
-            data?.message ||
+          // Get detailed error message
+          let errorMessage = data?.message || data?.error || 
             (editingComplianceId
-              ? 'Failed to update compliance record'
-              : 'Failed to create compliance record');
-          throw new Error(message);
+              ? 'Failed to update vendor compliance record'
+              : 'Failed to create vendor compliance record');
+          
+          // If error is an object or array, stringify it
+          if (typeof errorMessage === 'object') {
+            errorMessage = JSON.stringify(errorMessage);
+          }
+          
+          // Include error details if available
+          if (data?.error && typeof data.error !== 'string') {
+            errorMessage += ': ' + JSON.stringify(data.error);
+          }
+          
+          throw new Error(errorMessage);
         }
-        setStatusMessage(
+        toast.success(
           editingComplianceId
-            ? 'Compliance record updated successfully'
-            : 'Compliance record created successfully'
+            ? 'Vendor compliance record updated successfully'
+            : 'Vendor compliance record created successfully'
         );
         await loadRecords();
         resetForm();
       } catch (err) {
-        setError(err.message || 'Unable to submit compliance record');
+        const errorMessage = err.message || 'Unable to submit compliance record';
+        setError(errorMessage);
+        toast.error(errorMessage);
       } finally {
         setIsSubmitting(false);
       }
     },
-    [canEdit, editingComplianceId, formState, loadRecords, resetForm]
+    [canEdit, editingComplianceId, formState, loadRecords, resetForm, toast]
   );
 
   if (!canRead) {
     return (
       <div className={styles.container}>
+        <h2 className={styles.heading}>Vendors</h2>
         <div className={styles.feedback + ' ' + styles.feedbackError}>
           You do not have permission to view vendor compliance records.
         </div>
@@ -304,6 +306,9 @@ export default function VendorManager({ user }) {
       <div className={styles.header}>
         <div className={styles.headingGroup}>
           <h2 className={styles.heading}>Vendors</h2>
+          <p className={styles.subtitle}>
+            Manage vendor compliance records. Track licenses, insurance, WCB, and compliance status.
+          </p>
         </div>
         <div className={styles.headerMeta}>
           {canEdit && (
@@ -320,12 +325,148 @@ export default function VendorManager({ user }) {
       </div>
 
       {statusMessage && (
-        <div className={`${styles.feedback} ${styles.feedbackSuccess}`}>{statusMessage}</div>
+        <div className={styles.feedback + ' ' + styles.feedbackSuccess}>{statusMessage}</div>
       )}
-      {error && <div className={`${styles.feedback} ${styles.feedbackError}`}>{error}</div>}
+      {error && <div className={styles.feedback + ' ' + styles.feedbackError}>{error}</div>}
+
+      {isLoading && (
+        <div className={styles.feedback} style={{ textAlign: 'center' }}>
+          Loading vendor compliance records...
+        </div>
+      )}
+
+      {!isLoading && records.length === 0 && (
+        <div className={styles.feedback} style={{ textAlign: 'center' }}>
+          No vendor compliance records found.
+        </div>
+      )}
+
+      {!isLoading && records.length > 0 && (
+        <div className={styles.tableWrapper}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Compliance ID</th>
+                <th>Vendor</th>
+                <th>Status</th>
+                <th>Coverage</th>
+                <th>License</th>
+                <th>Insurance</th>
+                <th>Confidence</th>
+                <th>Missing Items</th>
+                <th>Created</th>
+                {canEdit && <th>Actions</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {records.map((record) => (
+                <tr key={record.compliance_id}>
+                  <td>{record.compliance_id}</td>
+                  <td>
+                    <div className={styles.tableCellStack}>
+                      <strong>{record.vendor_id || '—'}</strong>
+                      <span className={styles.subtleText}>{record.wcb_number || 'No WCB'}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span
+                      className={styles.statusBadge}
+                      style={{
+                        backgroundColor:
+                          record.status === 'compliant'
+                            ? 'rgba(16, 185, 129, 0.1)'
+                            : record.status === 'non_compliant'
+                            ? 'rgba(239, 68, 68, 0.1)'
+                            : record.status === 'at_risk'
+                            ? 'rgba(245, 158, 11, 0.1)'
+                            : 'rgba(148, 163, 184, 0.1)',
+                        color:
+                          record.status === 'compliant'
+                            ? '#10b981'
+                            : record.status === 'non_compliant'
+                            ? '#ef4444'
+                            : record.status === 'at_risk'
+                            ? '#f59e0b'
+                            : '#64748b',
+                      }}
+                    >
+                      {record.status || 'needs_review'}
+                    </span>
+                  </td>
+                  <td>
+                    {typeof record.insurance_coverage === 'number'
+                      ? `$${record.insurance_coverage.toLocaleString()}`
+                      : '—'}
+                  </td>
+                  <td>
+                    <div className={styles.tableCellStack}>
+                      <span>{record.license_number || '—'}</span>
+                      <span className={styles.subtleText}>
+                        {record.license_expiry ? formatDateTime(record.license_expiry) : '—'}
+                      </span>
+                    </div>
+                  </td>
+                  <td>
+                    <div className={styles.tableCellStack}>
+                      <span>{record.insurance_policy || '—'}</span>
+                      <span className={styles.subtleText}>
+                        {record.insurance_expiry ? formatDateTime(record.insurance_expiry) : '—'}
+                      </span>
+                    </div>
+                  </td>
+                  <td>
+                    {typeof record.ai_confidence === 'number'
+                      ? `${record.ai_confidence.toFixed(1)}%`
+                      : '—'}
+                  </td>
+                  <td>
+                    <div className={styles.tableCellStack}>
+                      {Array.isArray(record.missing_items) && record.missing_items.length > 0 ? (
+                        record.missing_items.map((item) => (
+                          <span key={item} className={styles.subtleText}>
+                            • {item}
+                          </span>
+                        ))
+                      ) : (
+                        <span className={styles.subtleText}>None</span>
+                      )}
+                    </div>
+                  </td>
+                  <td>{formatDateTime(record.created_at)}</td>
+                  {canEdit && (
+                    <td>
+                      <div className={styles.actionButtons}>
+                        <button
+                          type="button"
+                          className={styles.editButton}
+                          onClick={() => handleEdit(record)}
+                          disabled={isSubmitting}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.deleteButton}
+                          onClick={() => handleDelete(record.compliance_id)}
+                          disabled={isSubmitting}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {canEdit && (
         <form className={styles.form} onSubmit={handleSubmit}>
+          <h3 className={styles.formTitle}>
+            {editingComplianceId ? 'Edit Vendor Compliance Record' : 'Create New Vendor Compliance Record'}
+          </h3>
           <div className={styles.formGrid}>
             <label className={styles.formField}>
               <span>Compliance ID *</span>
@@ -336,6 +477,7 @@ export default function VendorManager({ user }) {
                 onChange={handleInputChange}
                 required={!editingComplianceId}
                 disabled={Boolean(editingComplianceId)}
+                placeholder="compliance_uuid or leave blank to auto-generate"
               />
             </label>
 
@@ -348,6 +490,7 @@ export default function VendorManager({ user }) {
                 onChange={handleInputChange}
                 required={!editingComplianceId}
                 disabled={Boolean(editingComplianceId)}
+                placeholder="Link to existing vendor"
               />
             </label>
 
@@ -434,167 +577,48 @@ export default function VendorManager({ user }) {
                 step="0.1"
                 value={formState.ai_confidence}
                 onChange={handleInputChange}
+                placeholder="0-100"
+              />
+            </label>
+
+            <label className={styles.formField} style={{ gridColumn: '1 / -1' }}>
+              <span>Missing Items</span>
+              <textarea
+                name="missing_items"
+                rows={3}
+                placeholder="Enter one item per line"
+                value={formState.missing_items}
+                onChange={handleInputChange}
+              />
+            </label>
+
+            <label className={styles.formField} style={{ gridColumn: '1 / -1' }}>
+              <span>Rationale</span>
+              <textarea
+                name="rationale"
+                rows={3}
+                placeholder="Add AI rationale or notes"
+                value={formState.rationale}
+                onChange={handleInputChange}
               />
             </label>
           </div>
 
-          <label className={styles.formField}>
-            <span>Missing Items</span>
-            <textarea
-              name="missing_items"
-              rows={3}
-              placeholder="Enter one item per line"
-              value={formState.missing_items}
-              onChange={handleInputChange}
-            />
-          </label>
-
-          <label className={styles.formField}>
-            <span>Rationale</span>
-            <textarea
-              name="rationale"
-              rows={3}
-              placeholder="Add AI rationale or notes"
-              value={formState.rationale}
-              onChange={handleInputChange}
-            />
-          </label>
-
-          <div className={styles.formActions}>
+          <div className={styles.editActions}>
             <button type="submit" className={styles.primaryButton} disabled={isSubmitting}>
-              {editingComplianceId ? 'Save Changes' : 'Create Compliance Record'}
+              {editingComplianceId ? 'Update Compliance Record' : 'Create Compliance Record'}
             </button>
-            {editingComplianceId && (
-              <button
-                type="button"
-                onClick={resetForm}
-                className={styles.secondaryButton}
-                disabled={isSubmitting}
-              >
-                Cancel Edit
-              </button>
-            )}
+            <button
+              type="button"
+              className={styles.secondaryButton}
+              onClick={resetForm}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </button>
           </div>
         </form>
       )}
-
-      <div className={styles.listHeader}>
-        <button
-          type="button"
-          onClick={loadRecords}
-          className={styles.refreshButton}
-          disabled={isLoading}
-        >
-          Refresh
-        </button>
-      </div>
-
-      <div className={styles.tableWrapper}>
-        {isLoading ? (
-          <div className={`${styles.feedback} ${styles.feedbackInfo}`}>
-            Loading compliance records…
-          </div>
-        ) : records.length === 0 ? (
-          <div className={`${styles.feedback} ${styles.feedbackInfo}`}>
-            No compliance records yet.
-          </div>
-        ) : (
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Compliance ID</th>
-                <th>Vendor</th>
-                <th>Status</th>
-                <th>Coverage</th>
-                <th>License</th>
-                <th>Insurance</th>
-                <th>Confidence</th>
-                <th>Missing Items</th>
-                <th>Created</th>
-                {canEdit && <th>Actions</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {records.map((record) => (
-                <tr key={record.compliance_id}>
-                  <td>{record.compliance_id}</td>
-                  <td>
-                    <div className={styles.tableCellStack}>
-                      <strong>{record.vendor_id || '—'}</strong>
-                      <span className={styles.subtleText}>{record.wcb_number || 'No WCB'}</span>
-                    </div>
-                  </td>
-                  <td>
-                    <span className={styles.badge}>{record.status || 'needs_review'}</span>
-                  </td>
-                  <td>
-                    {typeof record.insurance_coverage === 'number'
-                      ? `$${record.insurance_coverage.toLocaleString()}`
-                      : '—'}
-                  </td>
-                  <td>
-                    <div className={styles.tableCellStack}>
-                      <span>{record.license_number || '—'}</span>
-                      <span className={styles.subtleText}>
-                        {record.license_expiry ? formatDateTime(record.license_expiry) : '—'}
-                      </span>
-                    </div>
-                  </td>
-                  <td>
-                    <div className={styles.tableCellStack}>
-                      <span>{record.insurance_policy || '—'}</span>
-                      <span className={styles.subtleText}>
-                        {record.insurance_expiry ? formatDateTime(record.insurance_expiry) : '—'}
-                      </span>
-                    </div>
-                  </td>
-                  <td>
-                    {typeof record.ai_confidence === 'number'
-                      ? `${record.ai_confidence.toFixed(1)}%`
-                      : '—'}
-                  </td>
-                  <td>
-                    <div className={styles.tableCellStack}>
-                      {Array.isArray(record.missing_items) && record.missing_items.length > 0 ? (
-                        record.missing_items.map((item) => (
-                          <span key={item} className={styles.subtleText}>
-                            • {item}
-                          </span>
-                        ))
-                      ) : (
-                        <span className={styles.subtleText}>None</span>
-                      )}
-                    </div>
-                  </td>
-                  <td>{formatDateTime(record.created_at)}</td>
-                  {canEdit && (
-                    <td>
-                      <div className={styles.actionGroup}>
-                        <button
-                          type="button"
-                          className={styles.linkButton}
-                          onClick={() => handleEdit(record)}
-                          disabled={isSubmitting}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          className={styles.linkButtonDanger}
-                          onClick={() => handleDelete(record)}
-                          disabled={isSubmitting}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
     </div>
   );
 }

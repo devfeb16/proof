@@ -2,8 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import styles from '../../styles/AdminDataManager.module.css';
 import { useToast } from '../ToastProvider';
 
-const FULL_ACCESS_ROLES = new Set(['superadmin', 'hr_admin', 'hr', 'admin']);
-const READ_ACCESS_ROLES = new Set(['superadmin', 'hr_admin', 'hr', 'admin', 'simple_user']);
+const FULL_ACCESS_ROLES = new Set(['superadmin', 'hr_admin', 'hr', 'admin', 'marketer', 'marketing_admin', 'simple_user']);
+const READ_ACCESS_ROLES = new Set(['superadmin', 'hr_admin', 'hr', 'admin', 'marketer', 'marketing_admin', 'simple_user']);
 
 const ONBOARD_STATUS_OPTIONS = [
   { value: 'pending', label: 'Pending' },

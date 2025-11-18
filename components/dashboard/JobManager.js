@@ -1,15 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import styles from '../../styles/AdminDataManager.module.css';
+import { useToast } from '../ToastProvider';
 
-const FULL_ACCESS_ROLES = new Set(['superadmin', 'hr_admin', 'hr']);
-const READ_ACCESS_ROLES = new Set([
-  'superadmin',
-  'hr_admin',
-  'hr',
-  'admin',
-  'base_user',
-  'simple_user',
-]);
+const FULL_ACCESS_ROLES = new Set(['superadmin', 'hr_admin', 'hr', 'admin', 'marketer', 'marketing_admin', 'simple_user']);
+const READ_ACCESS_ROLES = new Set(['superadmin', 'hr_admin', 'hr', 'admin', 'marketer', 'marketing_admin', 'simple_user']);
 
 const SOURCE_OPTIONS = [
   { value: '', label: 'Select source' },
@@ -72,12 +66,16 @@ function normalizeRole(role) {
 }
 
 function hasFullAccess(user) {
+  if (!user) return false;
   return FULL_ACCESS_ROLES.has(normalizeRole(user?.role));
 }
 
 function hasReadAccess(user) {
+  if (!user) return false;
   const role = normalizeRole(user?.role);
-  return READ_ACCESS_ROLES.has(role);
+  // Exclude base_user from access
+  if (role === 'base_user') return false;
+  return hasFullAccess(user) || READ_ACCESS_ROLES.has(role);
 }
 
 function formatDateForInput(value) {
@@ -136,6 +134,7 @@ function preparePayload(formState, { isUpdate = false } = {}) {
 }
 
 export default function JobManager({ user }) {
+  const toast = useToast();
   const canRead = useMemo(() => hasReadAccess(user), [user]);
   const canEdit = useMemo(() => hasFullAccess(user), [user]);
 
@@ -191,7 +190,7 @@ export default function JobManager({ user }) {
     }));
   }, []);
 
-  const handleEditJob = useCallback(
+  const handleEdit = useCallback(
     (job) => {
       if (!canEdit) return;
       setEditingJobId(job.job_id);
@@ -227,39 +226,30 @@ export default function JobManager({ user }) {
     [canEdit]
   );
 
-  const handleDeleteJob = useCallback(
-    async (job) => {
+  const handleDelete = useCallback(
+    async (jobId) => {
       if (!canEdit) return;
-      const confirmed =
-        typeof window === 'undefined'
-          ? true
-          : window.confirm(`Delete job ${job.job_id}? This action cannot be undone.`);
-      if (!confirmed) return;
-      setIsSubmitting(true);
-      setStatusMessage('');
-      setError('');
+      if (!confirm('Are you sure you want to delete this job?')) return;
+
       try {
-        const response = await fetch(`/api/jobs/${encodeURIComponent(job.job_id)}`, {
+        const response = await fetch(`/api/jobs/${encodeURIComponent(jobId)}`, {
           method: 'DELETE',
           credentials: 'include',
         });
         const payload = await response.json().catch(() => ({}));
         if (!response.ok || payload.success === false) {
-          const message = payload?.message || 'Failed to delete job';
-          throw new Error(message);
+          throw new Error(payload?.message || 'Failed to delete job');
         }
-        setStatusMessage(`Deleted job ${job.job_id}`);
+        toast.success('Job deleted successfully');
         await loadJobs();
-        if (editingJobId === job.job_id) {
+        if (editingJobId === jobId) {
           resetForm();
         }
       } catch (err) {
-        setError(err.message || 'Unable to delete job');
-      } finally {
-        setIsSubmitting(false);
+        toast.error(err.message || 'Failed to delete job');
       }
     },
-    [canEdit, editingJobId, loadJobs, resetForm]
+    [canEdit, loadJobs, editingJobId, resetForm, toast]
   );
 
   const handleSubmit = useCallback(
@@ -283,21 +273,36 @@ export default function JobManager({ user }) {
         });
         const data = await response.json().catch(() => ({}));
         if (!response.ok || data.success === false) {
-          const message =
-            data?.message ||
+          // Get detailed error message
+          let errorMessage = data?.message || data?.error || 
             (editingJobId ? 'Failed to update job' : 'Failed to create job');
-          throw new Error(message);
+          
+          // If error is an object or array, stringify it
+          if (typeof errorMessage === 'object') {
+            errorMessage = JSON.stringify(errorMessage);
+          }
+          
+          // Include error details if available
+          if (data?.error && typeof data.error !== 'string') {
+            errorMessage += ': ' + JSON.stringify(data.error);
+          }
+          
+          throw new Error(errorMessage);
         }
-        setStatusMessage(editingJobId ? 'Job updated successfully' : 'Job created successfully');
+        toast.success(
+          editingJobId ? 'Job updated successfully' : 'Job created successfully'
+        );
         await loadJobs();
         resetForm();
       } catch (err) {
-        setError(err.message || 'Unable to submit job');
+        const errorMessage = err.message || 'Unable to submit job';
+        setError(errorMessage);
+        toast.error(errorMessage);
       } finally {
         setIsSubmitting(false);
       }
     },
-    [canEdit, editingJobId, formState, loadJobs, resetForm]
+    [canEdit, editingJobId, formState, loadJobs, resetForm, toast]
   );
 
   if (!canRead) {
@@ -313,26 +318,135 @@ export default function JobManager({ user }) {
 
   return (
     <div className={styles.container}>
-      {canEdit && (
-        <div className={styles.toolbar}>
-          <button
-            type="button"
-            className={styles.secondaryButton}
-            onClick={resetForm}
-            disabled={isSubmitting}
-          >
-            New Job
-          </button>
+      <div className={styles.header}>
+        <div className={styles.headingGroup}>
+          <h2 className={styles.heading}>Jobs</h2>
+          <p className={styles.subtitle}>
+            Manage job requests and service orders. Track status, priority, and assignments.
+          </p>
+        </div>
+        <div className={styles.headerMeta}>
+          {canEdit && (
+            <button
+              type="button"
+              className={styles.secondaryButton}
+              onClick={resetForm}
+              disabled={isSubmitting}
+            >
+              New Job
+            </button>
+          )}
+        </div>
+      </div>
+
+      {statusMessage && (
+        <div className={styles.feedback + ' ' + styles.feedbackSuccess}>{statusMessage}</div>
+      )}
+      {error && <div className={styles.feedback + ' ' + styles.feedbackError}>{error}</div>}
+
+      {isLoading && (
+        <div className={styles.feedback} style={{ textAlign: 'center' }}>
+          Loading jobs...
         </div>
       )}
 
-      {statusMessage && (
-        <div className={`${styles.feedback} ${styles.feedbackSuccess}`}>{statusMessage}</div>
+      {!isLoading && jobs.length === 0 && (
+        <div className={styles.feedback} style={{ textAlign: 'center' }}>
+          No jobs found.
+        </div>
       )}
-      {error && <div className={`${styles.feedback} ${styles.feedbackError}`}>{error}</div>}
+
+      {!isLoading && jobs.length > 0 && (
+        <div className={styles.tableWrapper}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Job ID</th>
+                <th>Customer</th>
+                <th>Service</th>
+                <th>Status</th>
+                <th>Priority</th>
+                <th>Window</th>
+                <th>Compliance</th>
+                <th>Updated</th>
+                {canEdit && <th>Actions</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {jobs.map((job) => (
+                <tr key={job.job_id}>
+                  <td>{job.job_id}</td>
+                  <td>
+                    <div className={styles.tableCellStack}>
+                      <strong>{job.customer_name || '—'}</strong>
+                      <span className={styles.subtleText}>{job.customer_email || job.customer_phone || '—'}</span>
+                    </div>
+                  </td>
+                  <td>{job.service_type || '—'}</td>
+                  <td>
+                    <span
+                      className={styles.statusBadge}
+                      style={{
+                        backgroundColor:
+                          job.status === 'complete'
+                            ? 'rgba(16, 185, 129, 0.1)'
+                            : job.status === 'canceled'
+                            ? 'rgba(239, 68, 68, 0.1)'
+                            : 'rgba(148, 163, 184, 0.1)',
+                        color:
+                          job.status === 'complete'
+                            ? '#10b981'
+                            : job.status === 'canceled'
+                            ? '#ef4444'
+                            : '#64748b',
+                      }}
+                    >
+                      {job.status || '—'}
+                    </span>
+                  </td>
+                  <td>{job.priority || '—'}</td>
+                  <td>
+                    <div className={styles.tableCellStack}>
+                      <span>{formatDateForDisplay(job.window_start)}</span>
+                      <span className={styles.subtleText}>{formatDateForDisplay(job.window_end)}</span>
+                    </div>
+                  </td>
+                  <td>{job.compliance_only ? 'Yes' : 'No'}</td>
+                  <td>{formatDateForDisplay(job.updated_at || job.created_at)}</td>
+                  {canEdit && (
+                    <td>
+                      <div className={styles.actionButtons}>
+                        <button
+                          type="button"
+                          className={styles.editButton}
+                          onClick={() => handleEdit(job)}
+                          disabled={isSubmitting}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.deleteButton}
+                          onClick={() => handleDelete(job.job_id)}
+                          disabled={isSubmitting}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {canEdit && (
         <form className={styles.form} onSubmit={handleSubmit}>
+          <h3 className={styles.formTitle}>
+            {editingJobId ? 'Edit Job' : 'Create New Job'}
+          </h3>
           <div className={styles.formGrid}>
             <label className={styles.formField}>
               <span>Job ID *</span>
@@ -343,6 +457,7 @@ export default function JobManager({ user }) {
                 onChange={handleInputChange}
                 required={!editingJobId}
                 disabled={Boolean(editingJobId)}
+                placeholder="job_uuid or leave blank to auto-generate"
               />
             </label>
 
@@ -444,27 +559,25 @@ export default function JobManager({ user }) {
               />
             </label>
 
-            <div className={styles.dateFieldsGroup}>
-              <label className={styles.formField}>
-                <span>Window Start</span>
-                <input
-                  type="datetime-local"
-                  name="window_start"
-                  value={formState.window_start}
-                  onChange={handleInputChange}
-                />
-              </label>
+            <label className={styles.formField}>
+              <span>Window Start</span>
+              <input
+                type="datetime-local"
+                name="window_start"
+                value={formState.window_start}
+                onChange={handleInputChange}
+              />
+            </label>
 
-              <label className={styles.formField}>
-                <span>Window End</span>
-                <input
-                  type="datetime-local"
-                  name="window_end"
-                  value={formState.window_end}
-                  onChange={handleInputChange}
-                />
-              </label>
-            </div>
+            <label className={styles.formField}>
+              <span>Window End</span>
+              <input
+                type="datetime-local"
+                name="window_end"
+                value={formState.window_end}
+                onChange={handleInputChange}
+              />
+            </label>
 
             <label className={styles.formField}>
               <span>Address Street</span>
@@ -529,138 +642,57 @@ export default function JobManager({ user }) {
               />
             </label>
 
-            <label className={`${styles.formField} ${styles.formFieldCheckbox}`}>
-              <input
-                type="checkbox"
-                name="compliance_only"
-                checked={formState.compliance_only}
+            <label className={styles.formField} style={{ gridColumn: '1 / -1' }}>
+              <span>Compliance Only</span>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input
+                  type="checkbox"
+                  name="compliance_only"
+                  checked={formState.compliance_only}
+                  onChange={handleInputChange}
+                />
+                <span>Check if this is a compliance-only job</span>
+              </label>
+            </label>
+
+            <label className={styles.formField} style={{ gridColumn: '1 / -1' }}>
+              <span>Scope Notes</span>
+              <textarea
+                name="notes_scope"
+                rows={3}
+                value={formState.notes_scope}
+                onChange={handleInputChange}
+                placeholder="Enter job scope and notes"
+              />
+            </label>
+
+            <label className={styles.formField} style={{ gridColumn: '1 / -1' }}>
+              <span>AI JSON</span>
+              <textarea
+                name="ai_json"
+                rows={3}
+                placeholder='Paste JSON string (e.g. {"key":"value"})'
+                value={formState.ai_json}
                 onChange={handleInputChange}
               />
-              <span>Compliance Only</span>
             </label>
           </div>
 
-          <label className={styles.formField}>
-            <span>Scope Notes</span>
-            <textarea
-              name="notes_scope"
-              rows={3}
-              value={formState.notes_scope}
-              onChange={handleInputChange}
-            />
-          </label>
-
-          <label className={styles.formField}>
-            <span>AI JSON</span>
-            <textarea
-              name="ai_json"
-              rows={3}
-              placeholder='Paste JSON string (e.g. {"key":"value"})'
-              value={formState.ai_json}
-              onChange={handleInputChange}
-            />
-          </label>
-
-          <div className={styles.formActions}>
+          <div className={styles.editActions}>
             <button type="submit" className={styles.primaryButton} disabled={isSubmitting}>
-              {editingJobId ? 'Save Changes' : 'Create Job'}
+              {editingJobId ? 'Update Job' : 'Create Job'}
             </button>
-            {editingJobId && (
-              <button
-                type="button"
-                onClick={resetForm}
-                className={styles.secondaryButton}
-                disabled={isSubmitting}
-              >
-                Cancel Edit
-              </button>
-            )}
+            <button
+              type="button"
+              className={styles.secondaryButton}
+              onClick={resetForm}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </button>
           </div>
         </form>
       )}
-
-      <div className={styles.listHeader}>
-        <button
-          type="button"
-          onClick={loadJobs}
-          className={styles.refreshButton}
-          disabled={isLoading}
-        >
-          Refresh
-        </button>
-      </div>
-
-      <div className={styles.tableWrapper}>
-        {isLoading ? (
-          <div className={`${styles.feedback} ${styles.feedbackInfo}`}>Loading jobs…</div>
-        ) : jobs.length === 0 ? (
-          <div className={`${styles.feedback} ${styles.feedbackInfo}`}>No jobs recorded yet.</div>
-        ) : (
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Job ID</th>
-                <th>Customer</th>
-                <th>Service</th>
-                <th>Status</th>
-                <th>Priority</th>
-                <th>Window</th>
-                <th>Compliance</th>
-                <th>Updated</th>
-                {canEdit && <th>Actions</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {jobs.map((job) => (
-                <tr key={job.job_id}>
-                  <td>{job.job_id}</td>
-                  <td>
-                    <div className={styles.tableCellStack}>
-                      <strong>{job.customer_name || '—'}</strong>
-                      <span className={styles.subtleText}>{job.customer_email || job.customer_phone || '—'}</span>
-                    </div>
-                  </td>
-                  <td>{job.service_type || '—'}</td>
-                  <td>
-                    <span className={styles.badge}>{job.status || '—'}</span>
-                  </td>
-                  <td>{job.priority || '—'}</td>
-                  <td>
-                    <div className={styles.tableCellStack}>
-                      <span>{formatDateForDisplay(job.window_start)}</span>
-                      <span className={styles.subtleText}>{formatDateForDisplay(job.window_end)}</span>
-                    </div>
-                  </td>
-                  <td>{job.compliance_only ? 'Yes' : 'No'}</td>
-                  <td>{formatDateForDisplay(job.updated_at || job.created_at)}</td>
-                  {canEdit && (
-                    <td>
-                      <div className={styles.actionGroup}>
-                        <button
-                          type="button"
-                          className={styles.linkButton}
-                          onClick={() => handleEditJob(job)}
-                          disabled={isSubmitting}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          className={styles.linkButtonDanger}
-                          onClick={() => handleDeleteJob(job)}
-                          disabled={isSubmitting}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
     </div>
   );
 }
