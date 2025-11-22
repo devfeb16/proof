@@ -13,36 +13,71 @@ import LoxoPanel from '../components/dashboard/LoxoPanel';
 import CityServiceManager from '../components/dashboard/CityServiceManager';
 import ApiEndpointsPanel from '../components/dashboard/ApiEndpointsPanel';
 import ScraperManager from '../components/dashboard/ScraperManager';
+import { env } from '../lib/config';
 
 export async function getServerSideProps(context) {
   const { req } = context;
   const cookie = req.headers.cookie || '';
-  const proto = req.headers['x-forwarded-proto'] || 'http';
-  const host = req.headers.host;
-  const baseUrl = `${proto}://${host}`;
+
+  const forwardedProto = req.headers['x-forwarded-proto'];
+  const forwardedHost = req.headers['x-forwarded-host'];
+  const rawHost = forwardedHost || req.headers.host;
+  const host = Array.isArray(rawHost) ? rawHost[0] : rawHost;
+  const proto = Array.isArray(forwardedProto)
+    ? forwardedProto[0] || 'http'
+    : forwardedProto || 'http';
+
+  let baseUrl;
+  if (host) {
+    baseUrl = `${proto}://${host}`;
+  } else {
+    baseUrl = env.NEXT_PUBLIC_BASE_URL || 'http://127.0.0.1:8000';
+  }
+
+  console.log('SSR dashboard auth check', {
+    baseUrl,
+    host,
+    forwardedHost,
+    forwardedProto,
+  });
+
   try {
     const res = await fetch(`${baseUrl}/api/auth/me`, {
       headers: { cookie },
     });
     const contentType = res.headers.get('content-type') || '';
     if (!res.ok || !contentType.includes('application/json')) {
+      console.error('Dashboard auth check failed (status or content-type)', {
+        status: res.status,
+        contentType,
+        baseUrl,
+      });
       return { redirect: { destination: '/login', permanent: false } };
     }
     const text = await res.text();
     if (!text || !text.trim()) {
+      console.error('Dashboard auth check received empty body', { baseUrl });
       return { redirect: { destination: '/login', permanent: false } };
     }
     try {
       const data = JSON.parse(text);
       const user = data?.user || data?.data?.user || null;
       if (!user) {
+        console.error('Dashboard auth check parsed JSON but found no user', {
+          baseUrl,
+        });
         return { redirect: { destination: '/login', permanent: false } };
       }
       return { props: { user } };
     } catch (parseError) {
+      console.error('Dashboard auth check JSON parse error', {
+        parseError,
+        baseUrl,
+      });
       return { redirect: { destination: '/login', permanent: false } };
     }
-  } catch {
+  } catch (error) {
+    console.error('Dashboard auth check fetch error', { error, baseUrl });
     return { redirect: { destination: '/login', permanent: false } };
   }
 }

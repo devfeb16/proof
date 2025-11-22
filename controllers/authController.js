@@ -77,6 +77,15 @@ export async function login(req, res) {
     return jsonError(res, 400, `Missing required field(s): ${missing.join(', ')}`);
   }
   try {
+    console.log('Login attempt', {
+      email,
+      hasPassword: Boolean(password),
+      origin: req.headers.origin,
+      host: req.headers.host,
+      forwardedHost: req.headers['x-forwarded-host'],
+      forwardedProto: req.headers['x-forwarded-proto'],
+      userAgent: req.headers['user-agent'],
+    });
     await connectDB();
     await ensureDefaultHrUser();
     const user = await User.findOne({ email });
@@ -94,6 +103,11 @@ export async function login(req, res) {
     const token = signToken({ id: user._id, role: user.role });
     // Pass the request so the cookie secure flag reflects the real protocol
     setAuthCookie(res, token, req);
+    console.log('Login successful, auth cookie set', {
+      userId: user._id,
+      role: user.role,
+      email: user.email,
+    });
     return jsonSuccess(res, 200, 'Login successful', {
       user: sanitizeUser(user),
       token,

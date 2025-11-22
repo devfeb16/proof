@@ -3,14 +3,34 @@ import Reference from '../components/Reference';
 import CTA from '../components/CTA';
 import Footer from '../components/Footer';
 import Overview from '../components/Overview';
+import { env } from '../lib/config';
 
 export async function getServerSideProps(context) {
   const { req } = context;
   const cookie = req.headers.cookie || '';
-  const proto = req.headers['x-forwarded-proto'] || 'http';
-  const host = req.headers.host;
-  const baseUrl = `${proto}://${host}`;
-  
+
+  const forwardedProto = req.headers['x-forwarded-proto'];
+  const forwardedHost = req.headers['x-forwarded-host'];
+  const rawHost = forwardedHost || req.headers.host;
+  const host = Array.isArray(rawHost) ? rawHost[0] : rawHost;
+  const proto = Array.isArray(forwardedProto)
+    ? forwardedProto[0] || 'http'
+    : forwardedProto || 'http';
+
+  let baseUrl;
+  if (host) {
+    baseUrl = `${proto}://${host}`;
+  } else {
+    baseUrl = env.NEXT_PUBLIC_BASE_URL || 'http://127.0.0.1:8000';
+  }
+
+  console.log('SSR home auth check', {
+    baseUrl,
+    host,
+    forwardedHost,
+    forwardedProto,
+  });
+
   try {
     const res = await fetch(`${baseUrl}/api/auth/me`, {
       headers: { cookie },
@@ -28,13 +48,16 @@ export async function getServerSideProps(context) {
           }
         } catch (parseError) {
           // Invalid JSON, continue to show home page
-          console.error('JSON parse error:', parseError);
+          console.error('JSON parse error during home auth check:', parseError);
         }
       }
     }
   } catch (error) {
     // If there's an error checking auth, just continue to show home page
-    console.error('Auth check error:', error);
+    console.error('Auth check error in home getServerSideProps:', {
+      error,
+      baseUrl,
+    });
   }
   
   // No user session, show home page
